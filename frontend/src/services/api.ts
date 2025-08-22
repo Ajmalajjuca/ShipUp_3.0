@@ -1,5 +1,5 @@
 import axios, {  AxiosError } from 'axios';
-import type { AxiosResponse } from 'axios';
+import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { authService } from './auth';
 import { deliveryPartnerAuthService } from './deliveryPartnerAuth';
 
@@ -33,7 +33,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as any;
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -41,10 +41,13 @@ api.interceptors.response.use(
       try {
         const newToken = await authService.refreshAccessToken();
         if (newToken) {
+          if (!originalRequest.headers) {
+            originalRequest.headers = {};
+          }
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         // Redirect to login or handle refresh failure
         window.location.href = '/login';
       }

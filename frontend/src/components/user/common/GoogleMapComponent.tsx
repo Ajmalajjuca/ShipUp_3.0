@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigation, Pencil, MapPinOff } from 'lucide-react';
 
 interface GoogleMapComponentProps {
-  mapRef: React.RefObject<HTMLDivElement>;
+  mapRef: React.RefObject<HTMLDivElement | null>;
   isLoaded: boolean;
   error: string;
   addressFromMap: string;

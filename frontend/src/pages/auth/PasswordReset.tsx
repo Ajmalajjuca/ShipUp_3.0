@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, type ErrorResponse } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AuthLayout from '../../components/user/layout/AuthLayout';
-import { passwordResetSchema } from '../../utils/validation';
 import type { PasswordResetCredentials, PasswordResetFormErrors } from '../../types';
+import z from 'zod';
 // import { authService } from '../../../services/auth.service';
 
 
@@ -64,10 +64,10 @@ const PasswordResetPage: React.FC = () => {
       //     isPasswordReset: true 
       //   } 
       // });
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
+    } catch (error) {
+      if ((error as ErrorResponse) instanceof z.ZodError) {
         const newErrors: PasswordResetFormErrors = {};
-        error.errors.forEach((err) => {
+        (error as z.ZodError).issues.forEach((err: z.ZodIssue) => {
           if (err.path[0]) {
             newErrors[err.path[0] as keyof PasswordResetFormErrors] = err.message;
           }
@@ -76,7 +76,7 @@ const PasswordResetPage: React.FC = () => {
         toast.error('Please fix the errors below');
       } else {
         console.error('Reset Error:', error);
-        toast.error(error.response?.data?.message || 'Something went wrong!');
+        toast.error((error as ErrorResponse)?.data?.message || 'Something went wrong!');
       }
     } finally {
       setIsLoading(false);

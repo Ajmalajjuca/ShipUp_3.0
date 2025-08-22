@@ -4,12 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Upload, X } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { any, z, ZodError } from "zod";
+import {  z, ZodError } from "zod";
 import type { RootState } from "../../../../store";
 import { loginSuccess } from "../../../../store/slices/authSlice";
 import { editProfileSchema, sanitizeInput } from "../../../../utils/validation";
 import { extractZodErrors } from "../../../../utils/zodUtils";
-import type { EditProfileFormData } from "../../../../types";
+import type { EditProfileFormData, ErrorResponse } from "../../../../types";
 import { userService } from "../../../../services/user";
 
 // Edit Profile Validation Schema
@@ -97,7 +97,7 @@ const EditProfile: React.FC = () => {
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const fieldErrors = extractZodErrors(error as ZodError<any>);
+        const fieldErrors = extractZodErrors(error as ZodError<EditProfileFormData>);
         setErrors(fieldErrors);
 
         // Show the first error as a toast
@@ -142,9 +142,9 @@ console.log("formDataToSend", formDataToSend);
       } else {
         toast.error("Failed to update profile");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Profile update error:", error);
-      toast.error(error.response?.data?.message || "Failed to update profile.");
+      toast.error((error as ErrorResponse).response?.data?.message || "Failed to update profile.");
     } finally {
       setLoading(false);
     }

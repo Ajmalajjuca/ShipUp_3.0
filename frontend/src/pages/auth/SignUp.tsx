@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import {
   loginStart,
   loginSuccess,
   loginFailure,
 } from "../../store/slices/authSlice";
-import type { RootState } from "../../store";
 import { toast } from "react-hot-toast";
 import AuthLayout from "../../components/user/layout/AuthLayout";
 import { registerSchema, sanitizeInput,  } from "../../utils/validation";
@@ -17,7 +16,6 @@ import {
   type SignUpFormErrors,
 } from "../../types";
 import { authService } from "../../services/auth";
-import { z, ZodError } from 'zod';
 import { extractZodErrors } from "../../utils/zodUtils";
 
 const SignUpPage: React.FC = () => {
@@ -34,7 +32,6 @@ const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { error } = useSelector((state: RootState) => state.auth);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -57,7 +54,7 @@ const SignUpPage: React.FC = () => {
       const validationResult = registerSchema.safeParse(formData);
 
       if (!validationResult.success) {
-      setErrors(extractZodErrors<RegisterCredentials>(validationResult.error));
+      setErrors(extractZodErrors(validationResult.error));
       toast.error("Please fix the errors below");
       setLoading(false);
       return;
@@ -65,13 +62,16 @@ const SignUpPage: React.FC = () => {
 
     const validatedData = validationResult.data;
     const sanitizedData = Object.keys(validatedData).reduce((acc, key) => {
-      const value = (validatedData as any)[key];
-      (acc as any)[key] = typeof value === 'string' ? sanitizeInput(value) : value;
+      const typedKey = key as keyof RegisterCredentials;
+      const value = validatedData[typedKey];
+      acc[typedKey] = typeof value === 'string' ? sanitizeInput(value) : value;
       return acc;
-    }, {} as typeof validatedData);
+    }, {} as RegisterCredentials);
 
       // Prepare data to send (excluding confirmPassword)
       const { confirmPassword, ...requestData } = sanitizedData;
+      console.log("Registration data:", confirmPassword);
+      
       const dataToSend = { ...requestData, role: UserRole.CUSTOMER };
 
       const response = await authService.register(dataToSend);
@@ -81,10 +81,18 @@ const SignUpPage: React.FC = () => {
 
       toast.success("Registration successful! Please verify your email.");
       navigate("/otp-verification", { state: { email: formData.email } });
-    } catch (error: any) {
+    } catch (error: unknown) {
     console.log("Registration error:", error);
-    
-    const errorMessage = error.response?.data?.message || "Registration failed";
+
+    let errorMessage = "Registration failed";
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "response" in error &&
+      typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+    ) {
+      errorMessage = (error as { response?: { data?: { message?: string } } }).response!.data!.message!;
+    }
     dispatch(loginFailure(errorMessage));
     toast.error(errorMessage);
   } finally {
@@ -92,10 +100,7 @@ const SignUpPage: React.FC = () => {
     }
   };
 
-  const handleGoogleError = () => {
-    toast.error("Google sign up was unsuccessful");
-    dispatch(loginFailure("Google sign up failed"));
-  };
+
 
   const getInputClassName = (fieldName: keyof RegisterCredentials) => {
     return `w-full px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 transition-all ${

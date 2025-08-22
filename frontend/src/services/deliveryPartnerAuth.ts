@@ -121,6 +121,8 @@ class DeliveryPartnerAuthService {
       const response = await api.get<ApiResponse<PartnerUser>>('/partner/me');
       return response.data.data;
     } catch (error) {
+      console.log('Failed to fetch current partner:', error);
+      
       this.clearTokens();
       return null;
     }
@@ -168,6 +170,7 @@ class DeliveryPartnerAuthService {
       this.setTokens(accessToken);
       return accessToken;
     } catch (error) {
+      console.error('Partner token refresh failed:', error);
       this.clearTokens();
       return null;
     }
@@ -214,7 +217,7 @@ class DeliveryPartnerAuthService {
     };
   }
 
-  setDriverSession(token: string, userData: any) {
+  setDriverSession(token: string, userData: { refreshToken?: string }) {
     this.setTokens(token);
     if (userData.refreshToken) {
       this.setRefreshToken(userData.refreshToken);

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { CreditCard, Award, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface ProfileCardProps {
   userData: {
@@ -27,7 +26,6 @@ const ProfileCard: React.FC<ProfileCardProps> = ({
   isEditing = false,
   children 
 }) => {
-  const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
 
   return (

@@ -1,3 +1,4 @@
+import type { ErrorResponse } from "../types";
 import api from "./api";
 
 export interface UploadProgress {
@@ -32,18 +33,16 @@ export class UploadService {
       });
       
       return response.data;
-    } catch (error: any) {
-      if (error.code === 'ECONNABORTED') {
+    } catch (error) {
+      if ((error as ErrorResponse).response?.data.message === 'ECONNABORTED') {
         throw new Error('Upload timeout - please check your internet connection and try again');
       }
       
-      if (error.response?.status === 413) {
+      if ((error as ErrorResponse).response?.data.statusCode === 413) {
         throw new Error('Files are too large - please reduce file sizes and try again');
       }
       
-      if (error.response?.status >= 500) {
-        throw new Error('Server error - please try again later');
-      }
+      
       
       throw error;
     }

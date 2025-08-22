@@ -13,7 +13,7 @@ import VehicleSelection from "../../../components/user/BookingComponents/Vehicle
 import DeliveryTypeSelection from "../../../components/user/BookingComponents/DeliveryTypeSelection";
 import PaymentMethodSelection from "../../../components/user/BookingComponents/PaymentMethodSelection";
 import HomeLayout from "../../../components/user/layout/HomeLayout";
-import type { DriverTracking, OrderDetails, OrderStatus, PaymentMethod, PricingConfig, vehicle } from "../../../types";
+import type { DriverTracking, OrderDetails, OrderStatus, PaymentMethod, vehicle } from "../../../types";
 
 
 
@@ -22,7 +22,13 @@ const OrderBooking: React.FC = () => {
   const [vehicles, setVehicles] = useState<Array<vehicle>>([]);
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(null);
   const [driverTracking, setDriverTracking] = useState<DriverTracking | null>(null);
-  const driverLocationInterval = useRef<NodeJS.Timeout | null>(null);
+  const driverLocationInterval = useRef< null>(null);
+
+  setVehicles([
+    
+  ]);
+  setOrderStatus(null);
+  setDriverTracking(null);
 
 
   const [orderDetails, setOrderDetails] = useState<OrderDetails>({
@@ -43,7 +49,7 @@ const OrderBooking: React.FC = () => {
 
 
 
-  const updateOrderDetails = (key: keyof OrderDetails, value: any) => {
+  const updateOrderDetails = (key: keyof OrderDetails, value: unknown) => {
     setOrderDetails((prev) => ({
       ...prev,
       [key]: value,

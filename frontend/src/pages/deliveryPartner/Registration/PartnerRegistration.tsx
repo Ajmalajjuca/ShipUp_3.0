@@ -1,7 +1,6 @@
 import { useState } from "react";
-import type { DriverRegistrationData } from "../../../types";
+import type { DriverRegistrationData, ErrorResponse } from "../../../types";
 
-import { MapPinIcon } from "lucide-react";
 import RegistrationForm from "./RegistrationForm";
 import VehicleDetailsForm from "./VehicleDetailsForm";
 import PersonalDocuments from "./PersonalDocuments";
@@ -141,29 +140,27 @@ const PartnerRegistration: React.FC = () => {
         replace: true,
         state: { email: registrationData.email },
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error(
         "Registration failed:",
-        error.response?.data?.message || error.message
+        (error as ErrorResponse).response?.data?.message || "Unknown error"
       );
       let errorMessage = "Registration failed. Please try again.";
 
-      if (error.response?.data?.message?.includes("timeout")) {
+      if ((error as ErrorResponse).response?.data?.message?.includes("timeout")) {
         errorMessage =
           "Upload is taking longer than expected. Please check your internet connection and try again.";
-      } else if (error.response?.data?.message?.includes("too large")) {
+      } else if ((error as ErrorResponse).response?.data?.message?.includes("too large")) {
         errorMessage =
           "Some files are too large. Please compress your images and try again.";
-      } else if (error.response?.data?.message?.includes("Invalid file type")) {
+      } else if ((error as ErrorResponse).response?.data?.message?.includes("Invalid file type")) {
         errorMessage =
           "Some files have invalid formats. Please check your documents and try again.";
-      } else if (error.response?.status === 413) {
+      } else if ((error as ErrorResponse).response?.data.statusCode === 413) {
         errorMessage =
           "Files are too large. Please reduce file sizes and try again.";
-      } else if (error.response?.status >= 500) {
-        errorMessage = "Server error. Please try again in a few minutes.";
-      }
-      setError(error.response?.data?.message || errorMessage);
+      } 
+      setError((error as ErrorResponse).response?.data?.message || errorMessage);
     } finally {
       setIsSubmitting(false);
       setUploadProgress(null);

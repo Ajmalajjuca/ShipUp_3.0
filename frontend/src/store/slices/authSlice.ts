@@ -1,6 +1,6 @@
 import { createSlice,  } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type { AuthState } from '../../types';
+import type { AuthState, User } from '../../types';
 
 
 
@@ -19,7 +19,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    loginSuccess: (state, action: PayloadAction<{ user: any; }>) => {
+    loginSuccess: (state, action: PayloadAction<{ user: User; }>) => {
       state.isLoading = false;
       state.user = {
     ...state.user,       

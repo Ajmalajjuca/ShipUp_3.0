@@ -10,6 +10,8 @@ export interface ErrorResponse {
   response: {
     data: {
       message: string;
+      errors?: string[];
+      statusCode?: number;
     };
   };
 }
@@ -113,7 +115,7 @@ export interface DriverRegistrationData {
     id: string;
     title: string;
     isCompleted: boolean;
-    formComponent: React.FC<any>;
+    formComponent: React.FC<unknown>;
   }
 
   export interface PartnerUser {

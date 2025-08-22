@@ -225,7 +225,5 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-// Export the confirm function
-export const confirmDialog = (message: string, options: Omit<ConfirmDialogProps, 'onConfirm' | 'onCancel' | 'isOpen' | 'message'> = {}): Promise<boolean> => {
-  return ConfirmDialogManager.getInstance().confirm(message, options);
-};
+// Remove confirmDialog export from this file.
+// Move it to a new file: confirmDialogFn.ts

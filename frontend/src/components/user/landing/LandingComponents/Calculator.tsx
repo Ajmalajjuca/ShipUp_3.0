@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState} from 'react';
 // import { Autocomplete } from '@react-google-maps/api';
 import { useNavigate } from 'react-router-dom';
 // import { useGoogleMaps } from '../../../../contexts/GoogleMapsProvider';
@@ -6,8 +6,9 @@ import { useNavigate } from 'react-router-dom';
 const Calculator: React.FC = () => {
   const navigate = useNavigate();
   const [city, setCity] = useState('Bangalore');
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
+  setCity('Bangalore');
+  // const [origin, setOrigin] = useState('');
+  // const [destination, setDestination] = useState('');
   const [distance, setDistance] = useState('');
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   

@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 
-export function extractZodErrors<T extends Record<string, any>>(
+export function extractZodErrors<T extends Record<string, unknown>>(
   error: ZodError<T>
 ): Partial<Record<keyof T, string>> {
   const fieldErrors = error.flatten().fieldErrors;

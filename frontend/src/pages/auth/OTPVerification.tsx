@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 import AuthLayout from '../../components/user/layout/AuthLayout';
 import { authService } from '../../services/auth';
+import type { ErrorResponse } from '../../types';
 // import { authService } from '../../../services/auth.service';
 
 const OTPVerificationPage: React.FC = () => {
@@ -17,7 +16,6 @@ const OTPVerificationPage: React.FC = () => {
   const inputRefs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   
   const email = location.state?.email || '';
   const newPassword = location.state?.newPassword;
@@ -112,9 +110,9 @@ const OTPVerificationPage: React.FC = () => {
       
       toast.success('Account verified successfully!');
       navigate('/home');
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Invalid OTP');
-      toast.error(error.response?.data?.message || 'Invalid OTP');
+    } catch (error) {
+      setError((error as ErrorResponse).response?.data?.message || 'Invalid OTP');
+      toast.error((error as ErrorResponse).response?.data?.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
@@ -130,9 +128,9 @@ const OTPVerificationPage: React.FC = () => {
         setCountdown(60);
         toast.success('OTP resent successfully!');
       console.log('Resend OTP response:', response);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to resend OTP');
-      toast.error(error.response?.data?.message || 'Failed to resend OTP');
+    } catch (error) {
+      setError((error as ErrorResponse).response?.data?.message || 'Failed to resend OTP');
+      toast.error((error as ErrorResponse).response?.data?.message || 'Failed to resend OTP');
     } finally {
       setResending(false);
     }

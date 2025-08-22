@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { User, Settings, LogOut, Truck, MapPin, CreditCard, Bell, LifeBuoy, History } from 'lucide-react';
+import { User, Truck, MapPin, Bell, LifeBuoy, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../../store';
+
 
 const ModernProfilePage: React.FC = () => {
   const [isHovering, setIsHovering] = useState('');
   const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
   
   // Menu items expanded for a shipping profile
   const menuItems = [

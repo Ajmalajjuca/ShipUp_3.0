@@ -32,7 +32,7 @@ const BankDetailsForm: React.FC<{
       newErrors.ifscCode = 'Invalid IFSC code format';
     }
 
-    if (formData.upiId && !/^[\w\.\-_]{3,}@[a-zA-Z]{3,}$/.test(formData.upiId)) {
+    if (formData.upiId && !/^[\w.\-_]{3,}@[a-zA-Z]{3,}$/.test(formData.upiId)) {
       newErrors.upiId = 'Invalid UPI ID format';
     }
 

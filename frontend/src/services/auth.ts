@@ -1,7 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 import type { User, LoginCredentials, ApiResponse, RegisterCredentials } from '../types';
 import api from './api';
-import { th } from 'zod/v4/locales';
 
 class AuthService {
   private readonly TOKEN_KEY = 'authToken';
@@ -74,6 +73,8 @@ class AuthService {
       const response = await api.get<ApiResponse<User>>('/auth/me');
       return response.data.data;
     } catch (error) {
+      console.log('Failed to fetch current user:', error);
+      
       this.clearTokens();
       return null;
     }

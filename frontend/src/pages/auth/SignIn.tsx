@@ -2,18 +2,16 @@ import React, { useState } from "react";
 import type { FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, } from "react-redux";
 import {
   loginStart,
   loginSuccess,
   loginFailure,
 } from "../../store/slices/authSlice";
 import AuthLayout from "../../components/user/layout/AuthLayout";
-import type { RootState } from "../../store";
 import { toast } from "react-hot-toast";
-import type { LoginCredentials, SignInFormErrors } from "../../types";
+import type { ErrorResponse, LoginCredentials, SignInFormErrors } from "../../types";
 import { loginSchema, sanitizeInput, } from "../../utils/validation";
-import { set, z, ZodError } from "zod";
 import { extractZodErrors } from "../../utils/zodUtils";
 import { authService } from "../../services/auth";
 
@@ -52,7 +50,7 @@ const SignInPage: React.FC = () => {
       console.log("Validation result:", validationResult);
 
       if (!validationResult.success) {
-        setErrors(extractZodErrors<LoginCredentials>(validationResult.error));
+        setErrors(extractZodErrors(validationResult.error));
         toast.error("Please fix the errors below");
         setLoading(false);
         return;
@@ -60,10 +58,10 @@ const SignInPage: React.FC = () => {
 
       const validatedData = validationResult.data;
       const sanitizedData = Object.keys(validatedData).reduce((acc, key) => {
-        const value = (validatedData as any)[key];
-        (acc as any)[key] = typeof value === 'string' ? sanitizeInput(value) : value;
+        const value = validatedData[key as keyof LoginCredentials];
+        acc[key as keyof LoginCredentials] = typeof value === 'string' ? sanitizeInput(value) : value;
         return acc;
-      }, {} as typeof validatedData);
+      }, {} as LoginCredentials);
 
 
       // Uncomment when authService is available
@@ -72,9 +70,9 @@ const SignInPage: React.FC = () => {
       dispatch(loginSuccess({ user: response }));
       toast.success("Successfully signed in!");
       navigate("/");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Sign in error:", error);
-      const errorMessage = error.response?.data?.message || "Sign in failed";
+      const errorMessage = (error as ErrorResponse).response?.data?.message || "Sign in failed";
       dispatch(loginFailure(errorMessage));
       toast.error(errorMessage);
     } finally {
@@ -82,10 +80,7 @@ const SignInPage: React.FC = () => {
     }
   };
 
-  const handleGoogleError = () => {
-    toast.error("Google sign in was unsuccessful");
-    dispatch(loginFailure("Google sign in failed"));
-  };
+
 
   const getInputClassName = (fieldName: keyof SignInFormErrors) => {
     return `w-full px-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 transition-all ${errors[fieldName]

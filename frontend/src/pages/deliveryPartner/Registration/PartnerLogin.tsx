@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useState } from "react";
 import { useNavigate } from 'react-router-dom'
 import Layout from "../Layout";
 import { deliveryPartnerAuthService } from "../../../services/deliveryPartnerAuth";
+import type { ErrorResponse } from "../../../types";
 
 
 const PartnerLogin: React.FC = () => {
@@ -16,7 +15,6 @@ const PartnerLogin: React.FC = () => {
   const [message, setMessage] = useState("");
   const navigate = useNavigate()
 
-  const dispatch = useDispatch()
 
 
 
@@ -40,7 +38,7 @@ const PartnerLogin: React.FC = () => {
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      setErrors(prev => ({ ...prev, email: (error as any).response?.data.message }));
+      setErrors(prev => ({ ...prev, email: (error as ErrorResponse).response?.data.message }));
     }
   };
 
@@ -64,7 +62,7 @@ const PartnerLogin: React.FC = () => {
     } catch (error) {
       console.error(error);
       setIsSubmitting(false);
-      setErrors(prev => ({ ...prev, otp: (error as any).response?.data.message }));
+      setErrors(prev => ({ ...prev, otp: (error as ErrorResponse).response?.data.message }));
     }
   };
 
