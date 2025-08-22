@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { IRating } from '@/interfaces/IModel/IRating';
+import { IRating } from '../interfaces/IModel/IRating';
 
 const RatingSchema = new Schema<IRating>(
   {

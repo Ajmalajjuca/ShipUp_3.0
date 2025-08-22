@@ -1,4 +1,4 @@
-import { IPreference } from '@/interfaces/IModel/IPreference';
+import { IPreference } from '../interfaces/IModel/IPreference';
 import mongoose, { Schema } from 'mongoose';
 
 const preferenceSchema = new Schema<IPreference>(

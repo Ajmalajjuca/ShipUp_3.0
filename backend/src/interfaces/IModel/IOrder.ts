@@ -1,5 +1,5 @@
 // interfaces/IModel/IOrder.ts
-import { Address, OrderStatus, PaymentMethod, PaymentStatus } from '@/types';
+import { Address, OrderStatus, PaymentMethod, PaymentStatus } from '../../types';
 import { Document, Types } from 'mongoose';
 
 export interface IOrder extends Document {

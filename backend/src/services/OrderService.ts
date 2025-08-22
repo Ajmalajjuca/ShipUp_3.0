@@ -17,7 +17,7 @@ import { inject,injectable } from 'tsyringe';
 import { IUserRepository } from '../interfaces/IRepository/IUserRepository';
 import { IOrderRepository } from '../interfaces/IRepository/IOrderRepository';
 import { IOTPRepository } from '../interfaces/IRepository/IOTPRepository';
-import { IOrderService } from '@/interfaces/IService/IOrderService';
+import { IOrderService } from '../interfaces/IService/IOrderService';
 import { IOrder } from '../interfaces/IModel/IOrder';
 
 @injectable()

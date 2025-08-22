@@ -1,4 +1,4 @@
-import { IAddress } from '@/interfaces/IModel/IAddress';
+import { IAddress } from '../interfaces/IModel/IAddress';
 import mongoose, { Schema } from 'mongoose';
 
 const addressSchema = new Schema<IAddress>(

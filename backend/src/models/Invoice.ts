@@ -1,6 +1,6 @@
 // models/invoice.model.ts
 import mongoose, { Schema } from 'mongoose';
-import { IInvoice } from '@/interfaces/IModel/IInvoice';
+import { IInvoice } from '../interfaces/IModel/IInvoice';
 
 const InvoiceSchema = new Schema<IInvoice>(
   {

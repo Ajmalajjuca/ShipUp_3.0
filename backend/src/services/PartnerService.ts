@@ -8,7 +8,7 @@ import { generateOTP } from '../utils/helpers';
 import { DocumentStatus, JWTPayload, OTPType, PartnerRegistrationData, UserRole } from '../types';
 import config from '../config';
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
-import { IPartner } from '@/interfaces/IModel/IPartner';
+import { IPartner } from '../interfaces/IModel/IPartner';
 
 
 

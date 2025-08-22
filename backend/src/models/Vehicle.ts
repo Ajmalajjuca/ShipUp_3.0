@@ -1,6 +1,6 @@
 // src/models/vehicle.model.ts
 
-import { IVehicle } from '@/interfaces/IModel/IVehicle';
+import { IVehicle } from '../interfaces/IModel/IVehicle';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface VehicleDocument extends IVehicle, Document {}

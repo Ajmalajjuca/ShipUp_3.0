@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { OTPType, OTPStatus } from '../types';
-import { IOTP, IOTPModel } from '@/interfaces/IModel/IOTP';
+import { IOTP, IOTPModel } from '../interfaces/IModel/IOTP';
 
 
 

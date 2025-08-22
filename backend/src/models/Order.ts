@@ -1,7 +1,7 @@
 // models/order.model.ts
 import mongoose, { Schema } from 'mongoose';
-import { IOrder } from '@/interfaces/IModel/IOrder';
-import { OrderStatus, PaymentStatus } from '@/types';
+import { IOrder } from '../interfaces/IModel/IOrder';
+import { OrderStatus, PaymentStatus } from '../types';
 
 const OrderSchema = new Schema<IOrder>(
   {

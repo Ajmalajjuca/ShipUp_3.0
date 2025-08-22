@@ -1,4 +1,4 @@
-import { IWallet } from '@/interfaces/IModel/IWallet';
+import { IWallet } from '../interfaces/IModel/IWallet';
 import mongoose, { Schema } from 'mongoose';
 
 const WalletSchema = new Schema<IWallet>(

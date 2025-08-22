@@ -5,7 +5,7 @@ import { BaseRepository } from './BaseRepository';
 import { Partner, PartnerStatus } from '../models/Partner';
 import { PaginationOptions, PaginatedResult, DocumentStatus } from '../types';
 import { IPartnerRepository } from '../interfaces/IRepository/IPartnerRepository';
-import { IPartner } from '@/interfaces/IModel/IPartner';
+import { IPartner } from '../interfaces/IModel/IPartner';
 
 @injectable()
 export class PartnerRepository extends BaseRepository<IPartner> implements IPartnerRepository {
