@@ -8,7 +8,7 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss()
   ],
-  server: {
-    port: 3000, // optional for local dev
-  },
+  define: {
+    'process.env': {} // (optional, fixes some env issues)
+  }
 })
