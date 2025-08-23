@@ -217,12 +217,14 @@ export const useGoogleMaps = ({
         toast.error(errorMessage + " Please select manually on the map.");
       },
       {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000, // 5 minutes
+        enableHighAccuracy: false,
+        timeout: 30000,
+        maximumAge: 0, // 5 minutes
       }
     );
   }, [placeMarker, reverseGeocode]);
+
+  
 
   const clearMap = useCallback(() => {
     try {
