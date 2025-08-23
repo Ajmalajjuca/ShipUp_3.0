@@ -21,7 +21,7 @@ export const useGoogleMaps = ({
   const [error, setError] = useState<string>("");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const isInitialized = useRef(false);
-  const locationTimeoutRef = useRef<NodeJS.Timeout>();
+  const locationTimeoutRef = useRef<number | undefined>(undefined);
 
   // Cleanup function to properly remove map elements
   const cleanup = useCallback(() => {

@@ -1,10 +1,11 @@
-// AddAddressForm.tsx - Updated to use reusable components
+// AddAddressForm.tsx - Updated with better error handling and UX
 import React, { useState, useCallback } from "react";
 import {
   ArrowLeft,
   Home,
   Briefcase,
   MapPin,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -15,7 +16,6 @@ import GoogleMapComponent from "../../../../components/user/common/GoogleMapComp
 
 const AddAddressForm: React.FC = () => {
   const navigate = useNavigate();
-
 
   const [formData, setFormData] = useState<Address>({
     type: "home",
@@ -45,19 +45,16 @@ const AddAddressForm: React.FC = () => {
       setAddressFromMap(address);
 
       // Auto-fill the street address if it's empty
-      setFormData((prev) => {
-        if (!prev.street.trim() && address) {
-          return {
-            ...prev,
-            street: address,
-            latitude: lat,
-            longitude: lng,
-          };
-        }
-        return prev;
-      });
+      if (!formData.street.trim() && address) {
+        setFormData((prev) => ({
+          ...prev,
+          street: address,
+          latitude: lat,
+          longitude: lng,
+        }));
+      }
     },
-    []
+    [formData.street]
   );
 
   // Google Maps integration
@@ -65,6 +62,7 @@ const AddAddressForm: React.FC = () => {
     mapRef,
     isLoaded,
     error: mapError,
+    isGettingLocation,
     getCurrentLocation,
     clearMap,
   } = useGoogleMaps({
@@ -95,14 +93,25 @@ const AddAddressForm: React.FC = () => {
   };
 
   const handleGetCurrentLocation = () => {
-    if (isLoaded) {
-      getCurrentLocation();
-    } else {
+    if (!isLoaded) {
       toast.error("Map is still loading. Please wait a moment.");
+      return;
     }
+    
+    if (isGettingLocation) {
+      toast.error("Already getting your location. Please wait.");
+      return;
+    }
+
+    getCurrentLocation();
   };
 
   const handleClearMap = () => {
+    if (!isLoaded) {
+      toast.error("Map is still loading. Please wait a moment.");
+      return;
+    }
+
     clearMap();
     setAddressFromMap("");
     setFormData((prev) => ({
@@ -137,11 +146,25 @@ const AddAddressForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validate()) {
+      const firstError = Object.values(errors)[0];
+      if (firstError) {
+        toast.error(firstError.toString());
+      }
       return;
     }
-
+  
+    // Optional: Check if location is selected
+    if (!formData.latitude || !formData.longitude) {
+      const proceed = window.confirm(
+        "No location pin selected on the map. Do you want to proceed without precise location coordinates?"
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+  
     try {
       setLoading(true);
       const response = await userService.addAddress({
@@ -154,13 +177,14 @@ const AddAddressForm: React.FC = () => {
         contactName: formData.contactName || undefined,
         contactPhone: formData.contactPhone || undefined,
       });
-
+  
       console.log("Address added:", response);
-
       toast.success("Address added successfully!");
       navigate("/address");
     } catch (error) {
-      toast.error((error as ErrorResponse).response.data.message || "Failed to add address. Please try again.");
+      const errorMessage = (error as ErrorResponse)?.response?.data?.message || 
+                          "Failed to add address. Please try again.";
+      toast.error(errorMessage);
       console.error("Error adding address:", error);
     } finally {
       setLoading(false);
@@ -168,7 +192,7 @@ const AddAddressForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-4xl mx-auto">
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center mb-6">
           <button
@@ -182,19 +206,19 @@ const AddAddressForm: React.FC = () => {
           <h1 className="text-xl font-semibold">Add New Address</h1>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Address Type Selection */}
-          <div className="mb-6">
+          <div>
             <label className="block text-gray-700 text-sm font-medium mb-3">
               Select Address Type
             </label>
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border ${
+                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
                   formData.type === "home"
-                    ? "border-red-500 bg-red-50 text-red-500"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 onClick={() => handleTypeSelect("home")}
               >
@@ -204,10 +228,10 @@ const AddAddressForm: React.FC = () => {
 
               <button
                 type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border ${
+                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
                   formData.type === "work"
-                    ? "border-red-500 bg-red-50 text-red-500"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 onClick={() => handleTypeSelect("work")}
               >
@@ -217,10 +241,10 @@ const AddAddressForm: React.FC = () => {
 
               <button
                 type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border ${
+                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
                   formData.type === "other"
-                    ? "border-red-500 bg-red-50 text-red-500"
-                    : "border-gray-200 hover:border-gray-300"
+                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
+                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                 }`}
                 onClick={() => handleTypeSelect("other")}
               >
@@ -231,17 +255,17 @@ const AddAddressForm: React.FC = () => {
           </div>
 
           {/* Contact Person Info */}
-          <div className="mb-6">
+          <div>
             <h2 className="text-base font-semibold mb-4 text-gray-700">
               Contact Person Info
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
                   htmlFor="contactName"
                   className="block text-gray-700 text-sm font-medium mb-2"
                 >
-                  Contact Person Name
+                  Contact Person Name *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -268,15 +292,16 @@ const AddAddressForm: React.FC = () => {
                     name="contactName"
                     value={formData.contactName}
                     onChange={handleChange}
-                    className={`w-full pl-12 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      errors.contactName ? "border-red-500" : "border-gray-300"
+                    className={`w-full pl-12 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors ${
+                      errors.contactName ? "border-red-500 bg-red-50" : "border-gray-300"
                     }`}
                     placeholder="Enter contact person name"
                     required
                   />
                 </div>
                 {errors.contactName && (
-                  <p className="mt-1 text-sm text-red-500">
+                  <p className="mt-1 text-sm text-red-500 flex items-center">
+                    <AlertCircle size={14} className="mr-1" />
                     {errors.contactName}
                   </p>
                 )}
@@ -287,17 +312,17 @@ const AddAddressForm: React.FC = () => {
                   htmlFor="contactPhone"
                   className="block text-gray-700 text-sm font-medium mb-2"
                 >
-                  Contact Phone Number
+                  Contact Phone Number *
                 </label>
                 <div className="flex">
                   <div className="w-20 mr-2">
-                    <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50">
+                    <div className="flex items-center border rounded-lg px-3 py-2 bg-gray-50 border-gray-300">
                       <img
                         src="https://purecatamphetamine.github.io/country-flag-icons/3x2/IN.svg"
                         className="w-5 h-3 mr-1"
                         alt="India flag"
                       />
-                      <span className="text-gray-700">+91</span>
+                      <span className="text-gray-700 text-sm">+91</span>
                     </div>
                   </div>
                   <input
@@ -306,8 +331,8 @@ const AddAddressForm: React.FC = () => {
                     name="contactPhone"
                     value={formData.contactPhone}
                     onChange={handleChange}
-                    className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                      errors.contactPhone ? "border-red-500" : "border-gray-300"
+                    className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors ${
+                      errors.contactPhone ? "border-red-500 bg-red-50" : "border-gray-300"
                     }`}
                     placeholder="Enter phone number"
                     maxLength={10}
@@ -315,7 +340,8 @@ const AddAddressForm: React.FC = () => {
                   />
                 </div>
                 {errors.contactPhone && (
-                  <p className="mt-1 text-sm text-red-500">
+                  <p className="mt-1 text-sm text-red-500 flex items-center">
+                    <AlertCircle size={14} className="mr-1" />
                     {errors.contactPhone}
                   </p>
                 )}
@@ -324,13 +350,19 @@ const AddAddressForm: React.FC = () => {
           </div>
 
           {/* Delivery Address Section */}
-          <div className="mb-6">
+          <div>
             <h2 className="text-base font-semibold mb-4 text-gray-700">
               Delivery Address
             </h2>
 
             {/* Street Address */}
             <div className="mb-4">
+              <label
+                htmlFor="street"
+                className="block text-gray-700 text-sm font-medium mb-2"
+              >
+                Complete Address *
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MapPin size={18} className="text-gray-400" />
@@ -342,58 +374,72 @@ const AddAddressForm: React.FC = () => {
                   onChange={handleChange}
                   type="text"
                   required
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 ${
-                    errors.street ? "border-red-500" : "border-gray-300"
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors ${
+                    errors.street ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
                   placeholder="Enter your complete address"
                 />
               </div>
               {errors.street && (
-                <p className="mt-1 text-sm text-red-500">{errors.street}</p>
+                <p className="mt-1 text-sm text-red-500 flex items-center">
+                  <AlertCircle size={14} className="mr-1" />
+                  {errors.street}
+                </p>
               )}
             </div>
 
-            {/* Street Number */}
-            <div className="mb-4">
-              <label
-                htmlFor="streetNumber"
-                className="block text-gray-700 text-sm font-medium mb-2"
-              >
-                Street Number
-              </label>
-              <input
-                type="text"
-                id="streetNumber"
-                name="streetNumber"
-                value={formData.streetNumber}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
-                placeholder="Enter street number"
-              />
-            </div>
-
-            {/* Building Details */}
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-medium mb-2">
-                Building/Floor Number
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Additional Address Details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label
+                  htmlFor="streetNumber"
+                  className="block text-gray-700 text-sm font-medium mb-2"
+                >
+                  Street Number
+                </label>
+                <input
+                  type="text"
+                  id="streetNumber"
+                  name="streetNumber"
+                  value={formData.streetNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
+                  placeholder="Street number"
+                />
+              </div>
+              
+              <div>
+                <label
+                  htmlFor="buildingNumber"
+                  className="block text-gray-700 text-sm font-medium mb-2"
+                >
+                  House Number
+                </label>
                 <input
                   type="text"
                   id="buildingNumber"
                   name="buildingNumber"
                   value={formData.buildingNumber}
                   onChange={handleChange}
-                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
                   placeholder="House no."
                 />
+              </div>
+              
+              <div>
+                <label
+                  htmlFor="floorNumber"
+                  className="block text-gray-700 text-sm font-medium mb-2"
+                >
+                  Floor Number
+                </label>
                 <input
                   type="text"
                   id="floorNumber"
                   name="floorNumber"
                   value={formData.floorNumber}
                   onChange={handleChange}
-                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 border-gray-300"
                   placeholder="Floor no."
                 />
               </div>
@@ -408,13 +454,15 @@ const AddAddressForm: React.FC = () => {
             addressFromMap={addressFromMap}
             latitude={formData.latitude}
             longitude={formData.longitude}
+            isGettingLocation={isGettingLocation}
             onGetCurrentLocation={handleGetCurrentLocation}
             onClearMap={handleClearMap}
+            height="h-80"
           />
 
           {/* Set as default checkbox */}
-          <div className="mb-6">
-            <label className="flex items-center">
+          <div>
+            <label className="flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 name="isDefault"
@@ -427,11 +475,11 @@ const AddAddressForm: React.FC = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-4 border-t border-gray-200">
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm"
             >
               {loading ? (
                 <div className="flex items-center">
@@ -458,7 +506,7 @@ const AddAddressForm: React.FC = () => {
                   Saving...
                 </div>
               ) : (
-                "Save Info"
+                "Save Address"
               )}
             </button>
           </div>
