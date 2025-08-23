@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Upload, X } from "lucide-react";
 import { toast } from "react-hot-toast";
-import {  z, ZodError } from "zod";
+import {  z,  } from "zod";
 import type { RootState } from "../../../../store";
 import { loginSuccess } from "../../../../store/slices/authSlice";
 import { editProfileSchema, sanitizeInput } from "../../../../utils/validation";
@@ -89,18 +89,13 @@ const EditProfile: React.FC = () => {
 
   const validateForm = (): boolean => {
     try {
-      // Clear previous errors
       setErrors({});
-
-      // Validate the form data
       editProfileSchema.parse(formData);
       return true;
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const fieldErrors = extractZodErrors(error as ZodError<EditProfileFormData>);
+        const fieldErrors =extractZodErrors(error as z.ZodError<Record<string, unknown>>);
         setErrors(fieldErrors);
-
-        // Show the first error as a toast
         const firstError = Object.values(fieldErrors)[0];
         if (firstError) {
           toast.error(firstError);
@@ -132,10 +127,10 @@ const EditProfile: React.FC = () => {
 console.log("formDataToSend", formDataToSend);
 
       const response = await userService.editProfile(formDataToSend);
-      console.log("Profile update response:", response.data.user);
+      console.log("Profile update response:", response.data);
 
       if (response.success) {
-        const updatedUser = { ...user, ...response.data.user };
+        const updatedUser = { ...user, ...response.data };
         dispatch(loginSuccess({ user: updatedUser }));
         toast.success("Profile updated successfully");
         navigate("/profile");

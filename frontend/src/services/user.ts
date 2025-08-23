@@ -2,11 +2,11 @@ import type { Address, AddressResponse, ApiResponse, User } from "../types";
 import api from "./api";
 
 class UserService {
-  async editProfile(data: Partial<unknown>): Promise<ApiResponse<unknown>>{
+  async editProfile(data: Partial<unknown>): Promise<ApiResponse<User>>{
     const response = await api.put(`/users/profile`, data, {
         headers: { "Content-Type": "multipart/form-data" },
     });
-    return response.data;
+    return response.data.data;
   }
   addAddress = async (addressData: Address): Promise<ApiResponse<Address>> => {
     console.log("Adding address with data:", addressData);
