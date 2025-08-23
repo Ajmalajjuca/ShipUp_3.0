@@ -1,4 +1,4 @@
-// AddAddressForm.tsx - Updated with better error handling and UX
+// AddAddressForm.tsx - Cleaned Version
 import React, { useState, useCallback } from "react";
 import {
   ArrowLeft,
@@ -34,28 +34,40 @@ const AddAddressForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [addressFromMap, setAddressFromMap] = useState<string>("");
 
-  // Memoize the location select callback to prevent unnecessary re-renders
-  const handleLocationSelect = useCallback(
-    (lat: number, lng: number, address: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        latitude: lat,
-        longitude: lng,
-      }));
-      setAddressFromMap(address);
+  // Extract street number from address
+  const extractStreetNumber = (fullAddress: string): string => {
+    if (!fullAddress) return "";
+    
+    const streetNumberMatch = fullAddress.match(/^(\d+[-]?[A-Za-z]?|\d+\/\d+|No\.?\s*\d+)/i);
+    if (streetNumberMatch) {
+      return streetNumberMatch[1].replace(/^No\.?\s*/i, '').trim();
+    }
+    
+    return "";
+  };
 
-      // Auto-fill the street address if it's empty
-      if (!formData.street.trim() && address) {
-        setFormData((prev) => ({
-          ...prev,
-          street: address,
-          latitude: lat,
-          longitude: lng,
-        }));
-      }
-    },
-    [formData.street]
-  );
+  // Location select handler
+  const handleLocationSelect = useCallback((lat: number, lng: number, address: string) => {
+    setAddressFromMap(address);
+    
+    const streetNumber = extractStreetNumber(address);
+    
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      street: address,
+      streetNumber: streetNumber,
+    }));
+
+    setErrors(prev => ({ 
+      ...prev, 
+      street: undefined,
+      streetNumber: undefined 
+    }));
+    
+    toast.success("Location and address updated!");
+  }, []);
 
   // Google Maps integration
   const {
@@ -65,32 +77,31 @@ const AddAddressForm: React.FC = () => {
     isGettingLocation,
     getCurrentLocation,
     clearMap,
-    testMapClick,
+    handleMapClick,
   } = useGoogleMaps({
     onLocationSelect: handleLocationSelect,
+    initialCenter: { lat: 12.9716, lng: 77.5946 },
+    initialZoom: 15,
   });
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
 
-    // Clear error when field is being edited
     if (errors[name as keyof Address]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleTypeSelect = (type: "home" | "work" | "other") => {
-    setFormData((prev) => ({ ...prev, type }));
+    setFormData(prev => ({ ...prev, type }));
   };
 
   const handleGetCurrentLocation = () => {
@@ -115,19 +126,28 @@ const AddAddressForm: React.FC = () => {
 
     clearMap();
     setAddressFromMap("");
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       latitude: undefined,
       longitude: undefined,
     }));
-    toast.success("Map cleared successfully");
+    toast.success("Map location cleared");
   };
+
+  const handleManualMapClick = useCallback((clientX: number, clientY: number) => {
+    if (handleMapClick) {
+      const success = handleMapClick(clientX, clientY);
+      if (!success) {
+        toast.error('Unable to place marker at that location');
+      }
+    }
+  }, [handleMapClick]);
 
   const validate = (): boolean => {
     const newErrors: Partial<Address> = {};
 
     if (!formData.street.trim()) {
-      newErrors.street = "Address is required";
+      newErrors.street = "Complete address is required";
     }
 
     if (!formData.contactName?.trim()) {
@@ -137,8 +157,7 @@ const AddAddressForm: React.FC = () => {
     if (!formData.contactPhone?.trim()) {
       newErrors.contactPhone = "Contact phone number is required";
     } else if (!/^[6-9]\d{9}$/.test(formData.contactPhone)) {
-      newErrors.contactPhone =
-        "Please enter a valid 10-digit Indian phone number";
+      newErrors.contactPhone = "Please enter a valid 10-digit Indian phone number";
     }
 
     setErrors(newErrors);
@@ -149,26 +168,24 @@ const AddAddressForm: React.FC = () => {
     e.preventDefault();
 
     if (!validate()) {
+      const firstErrorField = Object.keys(errors)[0];
       const firstError = Object.values(errors)[0];
       if (firstError) {
         toast.error(firstError.toString());
+        const errorElement = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+        errorElement?.focus();
       }
       return;
     }
 
-    // Optional: Check if location is selected
     if (!formData.latitude || !formData.longitude) {
-      const proceed = window.confirm(
-        "No location pin selected on the map. Do you want to proceed without precise location coordinates?"
-      );
-      if (!proceed) {
-        return;
-      }
+      toast.warning("No map location selected. Address will be saved without precise coordinates.");
     }
 
     try {
       setLoading(true);
-      const response = await userService.addAddress({
+      
+      const addressData = {
         ...formData,
         latitude: formData.latitude || undefined,
         longitude: formData.longitude || undefined,
@@ -177,16 +194,17 @@ const AddAddressForm: React.FC = () => {
         floorNumber: formData.floorNumber || undefined,
         contactName: formData.contactName || undefined,
         contactPhone: formData.contactPhone || undefined,
-      });
+      };
 
-      console.log("Address added:", response);
-      toast.success("Address added successfully!");
+      await userService.addAddress(addressData);
+      toast.success("Address saved successfully!");
       navigate("/address");
     } catch (error) {
-      const errorMessage = (error as ErrorResponse)?.response?.data?.message || 
-                          "Failed to add address. Please try again.";
+      const errorResponse = error as ErrorResponse;
+      const errorMessage = errorResponse?.response?.data?.message || 
+                          errorResponse?.message ||
+                          "Failed to save address. Please try again.";
       toast.error(errorMessage);
-      console.error("Error adding address:", error);
     } finally {
       setLoading(false);
     }
@@ -200,7 +218,6 @@ const AddAddressForm: React.FC = () => {
             onClick={() => navigate("/address")}
             className="p-2 mr-2 rounded-full hover:bg-gray-100 transition-colors"
             aria-label="Go back"
-            title="Go back to address book"
           >
             <ArrowLeft size={20} />
           </button>
@@ -214,44 +231,25 @@ const AddAddressForm: React.FC = () => {
               Select Address Type
             </label>
             <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
-                  formData.type === "home"
-                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                }`}
-                onClick={() => handleTypeSelect("home")}
-              >
-                <Home size={18} className="mr-2" />
-                <span>Home</span>
-              </button>
-
-              <button
-                type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
-                  formData.type === "work"
-                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                }`}
-                onClick={() => handleTypeSelect("work")}
-              >
-                <Briefcase size={18} className="mr-2" />
-                <span>Work</span>
-              </button>
-
-              <button
-                type="button"
-                className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
-                  formData.type === "other"
-                    ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                }`}
-                onClick={() => handleTypeSelect("other")}
-              >
-                <MapPin size={18} className="mr-2" />
-                <span>Other</span>
-              </button>
+              {[
+                { type: "home", icon: Home, label: "Home" },
+                { type: "work", icon: Briefcase, label: "Work" },
+                { type: "other", icon: MapPin, label: "Other" },
+              ].map(({ type, icon: Icon, label }) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`flex items-center px-4 py-3 rounded-lg border transition-all ${
+                    formData.type === type
+                      ? "border-red-500 bg-red-50 text-red-600 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                  }`}
+                  onClick={() => handleTypeSelect(type as "home" | "work" | "other")}
+                >
+                  <Icon size={18} className="mr-2" />
+                  <span>{label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -262,26 +260,13 @@ const AddAddressForm: React.FC = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label
-                  htmlFor="contactName"
-                  className="block text-gray-700 text-sm font-medium mb-2"
-                >
+                <label htmlFor="contactName" className="block text-gray-700 text-sm font-medium mb-2">
                   Contact Person Name *
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-gray-400"
-                      >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                       </svg>
@@ -309,10 +294,7 @@ const AddAddressForm: React.FC = () => {
               </div>
 
               <div>
-                <label
-                  htmlFor="contactPhone"
-                  className="block text-gray-700 text-sm font-medium mb-2"
-                >
+                <label htmlFor="contactPhone" className="block text-gray-700 text-sm font-medium mb-2">
                   Contact Phone Number *
                 </label>
                 <div className="flex">
@@ -356,12 +338,8 @@ const AddAddressForm: React.FC = () => {
               Delivery Address
             </h2>
 
-            {/* Street Address */}
             <div className="mb-4">
-              <label
-                htmlFor="street"
-                className="block text-gray-700 text-sm font-medium mb-2"
-              >
+              <label htmlFor="street" className="block text-gray-700 text-sm font-medium mb-2">
                 Complete Address *
               </label>
               <div className="relative">
@@ -378,7 +356,7 @@ const AddAddressForm: React.FC = () => {
                   className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors ${
                     errors.street ? "border-red-500 bg-red-50" : "border-gray-300"
                   }`}
-                  placeholder="Enter your complete address"
+                  placeholder="Enter complete address or click on map to auto-fill"
                 />
               </div>
               {errors.street && (
@@ -392,10 +370,7 @@ const AddAddressForm: React.FC = () => {
             {/* Additional Address Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
-                <label
-                  htmlFor="streetNumber"
-                  className="block text-gray-700 text-sm font-medium mb-2"
-                >
+                <label htmlFor="streetNumber" className="block text-gray-700 text-sm font-medium mb-2">
                   Street Number
                 </label>
                 <input
@@ -410,10 +385,7 @@ const AddAddressForm: React.FC = () => {
               </div>
               
               <div>
-                <label
-                  htmlFor="buildingNumber"
-                  className="block text-gray-700 text-sm font-medium mb-2"
-                >
+                <label htmlFor="buildingNumber" className="block text-gray-700 text-sm font-medium mb-2">
                   House Number
                 </label>
                 <input
@@ -428,10 +400,7 @@ const AddAddressForm: React.FC = () => {
               </div>
               
               <div>
-                <label
-                  htmlFor="floorNumber"
-                  className="block text-gray-700 text-sm font-medium mb-2"
-                >
+                <label htmlFor="floorNumber" className="block text-gray-700 text-sm font-medium mb-2">
                   Floor Number
                 </label>
                 <input
@@ -458,9 +427,25 @@ const AddAddressForm: React.FC = () => {
             isGettingLocation={isGettingLocation}
             onGetCurrentLocation={handleGetCurrentLocation}
             onClearMap={handleClearMap}
-            testMapClick={testMapClick}
+            onMapClick={handleManualMapClick}
             height="h-80"
           />
+
+          {/* Display coordinates if available */}
+          {formData.latitude && formData.longitude && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center text-green-700">
+                <MapPin size={16} className="mr-2" />
+                <span className="font-medium">✅ Location Selected</span>
+              </div>
+              <p className="text-green-600 text-sm mt-1 font-mono">
+                📍 {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+              </p>
+              <p className="text-green-600 text-sm mt-1">
+                Address will be saved with precise GPS coordinates for accurate delivery.
+              </p>
+            </div>
+          )}
 
           {/* Set as default checkbox */}
           <div>
@@ -485,25 +470,9 @@ const AddAddressForm: React.FC = () => {
             >
               {loading ? (
                 <div className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   Saving...
                 </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigation, Pencil, MapPinOff, Loader2, TestTube } from 'lucide-react';
+import { Navigation, MapPinOff, Loader2, MapPin, AlertTriangle } from 'lucide-react';
 
 interface GoogleMapComponentProps {
   mapRef: React.RefObject<HTMLDivElement | null>;
@@ -11,7 +11,8 @@ interface GoogleMapComponentProps {
   isGettingLocation?: boolean;
   onGetCurrentLocation: () => void;
   onClearMap: () => void;
-  testMapClick?: () => void; // Add this for debugging
+  testMapClick?: () => void;
+  onMapClick?: (clientX: number, clientY: number) => void;
   height?: string;
   showControls?: boolean;
   showCoordinates?: boolean;
@@ -27,15 +28,12 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   isGettingLocation = false,
   onGetCurrentLocation,
   onClearMap,
-  testMapClick,
+  onMapClick,
   height = "h-64",
   showControls = true,
   showCoordinates = true,
 }) => {
-  const handleMapContainerClick = (e: React.MouseEvent) => {
-    console.log('Map container clicked:', e);
-    // Don't prevent propagation - let it reach the Google Map
-  };
+  const hasMarker = latitude && longitude;
 
   return (
     <div className="mb-6">
@@ -48,12 +46,12 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               onClick={onGetCurrentLocation}
               disabled={!isLoaded || isGettingLocation}
               className="flex items-center px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
-              title="Use your current location"
+              title="Get your current location"
             >
               {isGettingLocation ? (
                 <>
                   <Loader2 size={16} className="mr-1 animate-spin" />
-                  <span>Getting Location...</span>
+                  <span>Getting...</span>
                 </>
               ) : (
                 <>
@@ -63,26 +61,14 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               )}
             </button>
             
-            {/* Debug button */}
-            {testMapClick && (
-              <button
-                type="button"
-                onClick={testMapClick}
-                disabled={!isLoaded}
-                className="flex items-center px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
-                title="Test map click at center"
-              >
-                <TestTube size={16} className="mr-1" />
-                <span>Test Click</span>
-              </button>
-            )}
+           
             
             <button
               type="button"
               onClick={onClearMap}
-              disabled={!isLoaded || isGettingLocation}
+              disabled={!hasMarker}
               className="flex items-center px-3 py-1.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
-              title="Clear all markers"
+              title="Clear selected location"
             >
               <MapPinOff size={16} className="mr-1" />
               <span>Clear</span>
@@ -91,50 +77,98 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         </div>
       )}
       
+      {/* Debug info */}
+      <div className="mb-2 text-xs space-y-1">
+        <div className="flex items-center gap-4">
+          <span className={`flex items-center ${isLoaded ? 'text-green-600' : 'text-yellow-600'}`}>
+            <div className={`w-2 h-2 rounded-full mr-2 ${isLoaded ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+            Map Status: {isLoaded ? 'Ready' : 'Loading...'}
+          </span>
+          <span className={`flex items-center ${hasMarker ? 'text-green-600' : 'text-gray-400'}`}>
+            <MapPin size={12} className="mr-1" />
+            Marker: {hasMarker ? 'Placed' : 'None'}
+          </span>
+        </div>
+      </div>
+      
       <div className="relative border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        {/* Map container - CRITICAL: No pointer-events blocking */}
+        {/* Map container */}
         <div 
           ref={mapRef} 
-          className={`${height} w-full bg-gray-50 cursor-crosshair`}
+          className={`${height} w-full bg-gray-100 relative`}
           style={{ 
-            minHeight: '256px',
-            // Ensure map can receive clicks
-            pointerEvents: isLoaded ? 'auto' : 'none'
+            minHeight: '320px',
+            cursor: isLoaded && !error ? 'crosshair' : 'default',
+            // Ensure all pointer events reach the map
+            pointerEvents: 'auto',
+            touchAction: 'manipulation'
           }}
-          onClick={handleMapContainerClick}
-        />
+          onClick={(e) => {
+            // Debug DOM clicks and handle them if Google Maps click isn't working
+            console.log('🖱️ Map container React onClick detected');
+            
+            if (!isLoaded || error) {
+              console.log('Map not ready, ignoring click');
+              return;
+            }
 
-        {/* Loading state overlay */}
+            if (onMapClick) {
+              console.log('🎯 Calling manual map click handler');
+              onMapClick(e.clientX, e.clientY);
+            } else {
+              console.log('❌ No map click handler provided');
+            }
+          }}
+        >
+          {/* Instructions overlay when map is ready but no marker */}
+          {isLoaded && !error && !hasMarker && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-5">
+              <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg opacity-80 max-w-xs text-center">
+                <div className="flex items-center justify-center">
+                  <MapPin size={16} className="mr-2" />
+                  Click anywhere on the map to place a marker
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Loading overlay */}
         {!isLoaded && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-500 border-t-transparent mx-auto mb-3"></div>
-              <div className="text-gray-600 font-medium">Loading map...</div>
-              <div className="text-gray-400 text-sm mt-1">Please wait a moment</div>
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+              <div className="text-gray-700 font-medium">Loading Google Maps...</div>
+              <div className="text-gray-500 text-sm mt-1">Please wait a moment</div>
             </div>
           </div>
         )}
 
-        {/* Error state overlay */}
+        {/* Error overlay */}
         {error && (
           <div className="absolute inset-0 flex items-center justify-center bg-red-50 z-10">
-            <div className="text-center p-4">
-              <MapPinOff size={40} className="mx-auto mb-3 text-red-400" />
-              <div className="text-red-600 font-medium mb-2">Map Error</div>
-              <div className="text-red-500 text-sm max-w-xs">{error}</div>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-3 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-              >
-                Reload Page
-              </button>
+            <div className="text-center p-6 max-w-md">
+              <AlertTriangle size={48} className="mx-auto mb-4 text-red-400" />
+              <div className="text-red-700 font-semibold mb-2">Map Loading Failed</div>
+              <div className="text-red-600 text-sm mb-4">{error}</div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm mr-2"
+                >
+                  Reload Page
+                </button>
+                <div className="text-xs text-red-500 mt-2">
+                  Make sure you have a valid Google Maps API key configured
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Location getting overlay */}
-        {isGettingLocation && isLoaded && (
-          <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-20">
+        {isGettingLocation && (
+          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-20">
             <div className="bg-white rounded-lg p-4 shadow-lg">
               <div className="flex items-center">
                 <Loader2 size={20} className="animate-spin text-blue-500 mr-3" />
@@ -144,60 +178,34 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
           </div>
         )}
 
-        {/* Debug info overlay */}
-        {isLoaded && (
-          <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs p-2 rounded">
-            <div>Map Loaded: {isLoaded ? '✅' : '❌'}</div>
-            <div>Has Coordinates: {latitude && longitude ? '✅' : '❌'}</div>
-            <div>Click Status: Ready</div>
-          </div>
-        )}
-
-        {/* Selected address info */}
+        {/* Address display */}
         {isLoaded && !error && (
           <div className="absolute bottom-2 left-2 right-2 bg-white bg-opacity-95 backdrop-blur-sm p-3 rounded-lg shadow-md border border-gray-200">
             <div className="flex items-start">
-              <MapPinOff size={16} className="text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+              {hasMarker ? (
+                <MapPin size={16} className="text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+              ) : (
+                <MapPinOff size={16} className="text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+              )}
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-700 text-sm mb-1">Selected Address:</p>
-                <p className="text-gray-600 text-sm leading-tight break-words">
-                  {addressFromMap || "No address selected. Click anywhere on the map to place a marker."}
+                <p className="font-medium text-gray-700 text-sm mb-1">
+                  {hasMarker ? "Selected Location:" : "No location selected"}
                 </p>
+                <p className="text-gray-600 text-sm leading-tight break-words">
+                  {addressFromMap || "Click on the map to select a location"}
+                </p>
+                {showCoordinates && hasMarker && (
+                  <p className="text-xs text-gray-400 font-mono mt-2">
+                    📍 {latitude!.toFixed(6)}, {longitude!.toFixed(6)}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Instructions */}
-      {isLoaded && !error && (
-        <div className="mt-3 space-y-2">
-          <p className="text-sm text-gray-500 flex items-center">
-            <Pencil size={14} className="mr-2 flex-shrink-0" />
-            Click anywhere on the map to place a marker, or drag the marker to adjust the location.
-          </p>
-          
-          {showCoordinates && latitude && longitude && (
-            <p className="text-xs text-gray-400 font-mono">
-              Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
-            </p>
-          )}
-
-          {/* Debug instructions */}
-          <p className="text-xs text-blue-500">
-            Debug: If manual clicking doesn't work, try the "Test Click" button above.
-          </p>
-        </div>
-      )}
-
-      {/* Error state instructions */}
-      {error && (
-        <div className="mt-3">
-          <p className="text-sm text-red-500">
-            Unable to load map. Please check your internet connection and Google Maps API key.
-          </p>
-        </div>
-      )}
+   
     </div>
   );
 };
