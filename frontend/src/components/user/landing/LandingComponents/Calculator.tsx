@@ -6,7 +6,9 @@ import { useNavigate } from 'react-router-dom';
 const Calculator: React.FC = () => {
   const navigate = useNavigate();
   const [city, setCity] = useState('Bangalore');
-  setCity('Bangalore');
+  // setCity('Bangalore');
+  console.log("city", setCity);
+  
   // const [origin, setOrigin] = useState('');
   // const [destination, setDestination] = useState('');
   const [distance, setDistance] = useState('');
