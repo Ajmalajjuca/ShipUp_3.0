@@ -1,7 +1,6 @@
 import React from 'react';
 import { CreditCard, Wallet, DollarSign, QrCode } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../../store';
+
 import type { PaymentMethod } from '../../../types';
 
 export type PaymentTiming = 'pre' | 'post';
@@ -25,8 +24,6 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   onSelect,
   orderAmount,
 }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
-  const walletBalance = user?.walletBalance || 0;
 
   const paymentOptions: PaymentOption[] = [
     // Pre-payment options
@@ -40,7 +37,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     {
       id: 'wallet',
       name: 'Wallet',
-      description: `Pay using your ShipUp wallet (Balance: ₹${walletBalance.toFixed(2)})`,
+      description: `Pay using your ShipUp wallet (Balance: ₹)`,
       icon: <Wallet className="w-5 h-5" />,
       timing: 'pre',
     },
@@ -77,12 +74,12 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
                 <div
                   key={option.id}
                   onClick={() =>
-                    option.id !== 'wallet' || walletBalance >= orderAmount
+                    option.id !== 'wallet' || 0
                       ? onSelect(option.id)
                       : null
                   }
                   className={`border rounded-lg p-4 transition-all ${
-                    option.id === 'wallet' && walletBalance < orderAmount
+                    option.id === 'wallet' 
                       ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-60'
                       : selectedMethod === option.id
                       ? 'border-indigo-600 bg-indigo-50 shadow-md cursor-pointer'
@@ -102,9 +99,9 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
                     <div className="ml-3">
                       <p className="font-medium text-gray-900">{option.name}</p>
                       <p className="text-sm text-gray-500">{option.description}</p>
-                      {option.id === 'wallet' && walletBalance < orderAmount && (
+                      {option.id === 'wallet'  && (
                         <p className="text-xs text-red-500 mt-1">
-                          Insufficient balance (₹{walletBalance.toFixed(2)} available)
+                          Insufficient balance (₹{orderAmount} available)
                         </p>
                       )}
                     </div>

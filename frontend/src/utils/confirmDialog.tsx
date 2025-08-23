@@ -225,5 +225,5 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-// Remove confirmDialog export from this file.
-// Move it to a new file: confirmDialogFn.ts
+
+export default ConfirmDialogManager;

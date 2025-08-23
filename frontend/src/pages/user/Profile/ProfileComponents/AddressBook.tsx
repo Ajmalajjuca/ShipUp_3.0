@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import type { RootState } from '../../../../store';
 import type { Address } from '../../../../types';
 import { userService } from '../../../../services/user';
-import { confirmDialog } from '../../../../utils/confirmDialog';
+import ConfirmDialogManager from '../../../../utils/confirmDialog';
 
 
 
@@ -48,7 +48,7 @@ setAddresses(response.data.addresses);
   const handleDeleteAddress = async (addressId: string | undefined) => {
     if (!addressId) return;
     try {
-      const confirmed = await confirmDialog(
+      const confirmed = await ConfirmDialogManager.getInstance().confirm(
         'Are you sure you want to delete this address?',{
           title: 'Delete Address',
           type: 'delete',
@@ -61,7 +61,7 @@ setAddresses(response.data.addresses);
       const response = await userService.deleteAddress(addressId);
       console.log("delete response", response);
       
-      if (response.success && response.data.isDeleted) {
+      if (response.success && response.data) {
         toast.success('Address deleted successfully');
         // Remove the deleted address from state
         setAddresses(addresses.filter(address => address._id !== addressId));

@@ -1,4 +1,3 @@
-import React from 'react'
 
 const Global_map = () => {
   return (

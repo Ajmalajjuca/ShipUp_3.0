@@ -1,4 +1,3 @@
-import React from "react";
 import AppRoutes from "./routes/AppRoutes";
 import { Provider } from "react-redux";
 import { store, persistor } from "./store";

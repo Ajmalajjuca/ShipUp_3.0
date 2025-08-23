@@ -82,7 +82,7 @@ const EditAddressForm: React.FC = () => {
         
         if (response.success && response.data) {
           const address = response.data.address;
-          
+          if(!address) return;
           setFormData({
             type: address.type,
             street: address.street,

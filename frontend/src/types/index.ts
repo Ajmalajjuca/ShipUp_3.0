@@ -236,5 +236,6 @@ export interface Address {
 
 export interface AddressResponse {
   addresses: Address[];
+  address: Address | null;
 }
 

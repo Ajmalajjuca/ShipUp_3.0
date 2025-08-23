@@ -18,11 +18,11 @@ class UserService {
     const response = await api.get('/users/addresses');    
     return response.data;
   }
-  getAddress = async (addressId: string): Promise<ApiResponse<Address>> => {
+  getAddress = async (addressId: string): Promise<ApiResponse<AddressResponse>> => {
     const response = await api.get(`/users/addresses/${addressId}`);    
     return response.data;
   }
-  updateAddress = async (addressId: string, addressData: Address): Promise<ApiResponse<Address>> => {
+  updateAddress = async (addressId: string, addressData: Address): Promise<ApiResponse<AddressResponse>> => {
     const response = await api.put(`/users/addresses/${addressId}`, addressData);    
     return response.data;
   }
