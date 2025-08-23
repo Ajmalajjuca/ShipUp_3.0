@@ -21,15 +21,15 @@ export const useGoogleMaps = ({
   const [error, setError] = useState<string>("");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const isInitialized = useRef(false);
-  const locationTimeoutRef = useRef<number | undefined>(undefined);
+  const locationWatchId = useRef<number | null>(null);
 
-  // Cleanup function to properly remove map elements
+  // Cleanup function
   const cleanup = useCallback(() => {
     try {
-      // Clear location timeout if active
-      if (locationTimeoutRef.current) {
-        clearTimeout(locationTimeoutRef.current);
-        locationTimeoutRef.current = undefined;
+      // Clear location watch if active
+      if (locationWatchId.current !== null) {
+        navigator.geolocation.clearWatch(locationWatchId.current);
+        locationWatchId.current = null;
       }
 
       if (markerRef.current) {
@@ -37,7 +37,6 @@ export const useGoogleMaps = ({
         markerRef.current = null;
       }
       if (mapInstanceRef.current) {
-        // Clear all listeners
         google.maps.event.clearInstanceListeners(mapInstanceRef.current);
         mapInstanceRef.current = null;
       }
@@ -47,7 +46,6 @@ export const useGoogleMaps = ({
   }, []);
 
   useEffect(() => {
-    // Prevent multiple initializations
     if (isInitialized.current) {
       return;
     }
@@ -68,6 +66,7 @@ export const useGoogleMaps = ({
         await loader.load();
 
         if (mapRef.current && !mapInstanceRef.current) {
+          // Create map instance
           const mapInstance = new google.maps.Map(mapRef.current, {
             center: initialCenter,
             zoom: initialZoom,
@@ -76,62 +75,57 @@ export const useGoogleMaps = ({
             fullscreenControl: false,
             zoomControl: true,
             clickableIcons: false,
+            gestureHandling: 'cooperative',
           });
 
           const geocoderInstance = new google.maps.Geocoder();
 
           mapInstanceRef.current = mapInstance;
           geocoderRef.current = geocoderInstance;
-          setIsLoaded(true);
-          isInitialized.current = true;
 
-          // Add click listener for map
-          const clickListener = mapInstance.addListener(
-            "click",
-            (event: google.maps.MapMouseEvent) => {
-              if (event.latLng) {
-                const lat = event.latLng.lat();
-                const lng = event.latLng.lng();
+          // Wait for map to be fully loaded
+          google.maps.event.addListenerOnce(mapInstance, 'idle', () => {
+            setIsLoaded(true);
+            isInitialized.current = true;
+            console.log('Map fully loaded and ready');
+          });
 
-                placeMarker(lat, lng);
-                reverseGeocode(lat, lng);
-              }
+          // Add click listener for map - CRITICAL: This must be set correctly
+          mapInstance.addListener("click", (event: google.maps.MapMouseEvent) => {
+            console.log('Map clicked:', event.latLng?.toJSON());
+            if (event.latLng) {
+              const lat = event.latLng.lat();
+              const lng = event.latLng.lng();
+              placeMarker(lat, lng);
+              reverseGeocode(lat, lng);
             }
-          );
+          });
 
-          // Store listener for cleanup
-          mapInstance.set("clickListener", clickListener);
+          console.log('Map initialized successfully');
         }
       } catch (error) {
         console.error("Error loading Google Maps:", error);
-        setError(
-          "Failed to load Google Maps. Please check your internet connection."
-        );
+        setError("Failed to load Google Maps. Please check your internet connection and API key.");
       }
     };
 
     initializeMap();
 
-    // Cleanup on unmount
-    return () => {
-      cleanup();
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current = null;
-      }
-      if (geocoderRef.current) {
-        geocoderRef.current = null;
-      }
-    };
+    return cleanup;
   }, [cleanup, initialCenter, initialZoom]);
 
   const placeMarker = useCallback((lat: number, lng: number) => {
     try {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current) {
+        console.error('Map instance not available');
+        return;
+      }
 
-      // Remove existing marker safely
+      console.log('Placing marker at:', lat, lng);
+
+      // Remove existing marker
       if (markerRef.current) {
         markerRef.current.setMap(null);
-        markerRef.current = null;
       }
 
       // Create new marker
@@ -140,29 +134,36 @@ export const useGoogleMaps = ({
         map: mapInstanceRef.current,
         draggable: true,
         animation: google.maps.Animation.DROP,
+        title: 'Drag to adjust location',
       });
 
-      // Add drag listener to marker
-      const dragListener = newMarker.addListener("dragend", () => {
-        const position = newMarker.getPosition();
-        if (position && geocoderRef.current) {
-          const newLat = position.lat();
-          const newLng = position.lng();
+      // Add drag listener
+      newMarker.addListener("dragend", (event: google.maps.MapMouseEvent) => {
+        if (event.latLng) {
+          const newLat = event.latLng.lat();
+          const newLng = event.latLng.lng();
+          console.log('Marker dragged to:', newLat, newLng);
           reverseGeocode(newLat, newLng);
         }
       });
 
-      // Store listener for cleanup
-      newMarker.set("dragListener", dragListener);
       markerRef.current = newMarker;
+      console.log('Marker placed successfully');
     } catch (error) {
       console.error("Error placing marker:", error);
+      toast.error("Error placing marker on map");
     }
   }, []);
 
   const reverseGeocode = useCallback(
     (lat: number, lng: number) => {
-      if (!geocoderRef.current) return;
+      if (!geocoderRef.current) {
+        console.error('Geocoder not available');
+        onLocationSelect(lat, lng, `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        return;
+      }
+
+      console.log('Reverse geocoding:', lat, lng);
 
       geocoderRef.current.geocode(
         { location: { lat, lng } },
@@ -170,13 +171,11 @@ export const useGoogleMaps = ({
           try {
             if (status === "OK" && results?.[0]) {
               const address = results[0].formatted_address;
+              console.log('Geocoding successful:', address);
               onLocationSelect(lat, lng, address);
             } else {
-              onLocationSelect(
-                lat,
-                lng,
-                `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-              );
+              console.warn('Geocoding failed:', status);
+              onLocationSelect(lat, lng, `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
             }
           } catch (error) {
             console.error("Error in reverse geocoding:", error);
@@ -194,78 +193,18 @@ export const useGoogleMaps = ({
       return;
     }
 
-    // Prevent multiple simultaneous requests
     if (isGettingLocation) {
+      toast.error("Already getting your location. Please wait.");
       return;
     }
 
     setIsGettingLocation(true);
-    
-    // Show loading toast
-    const loadingToast = toast.loading("Getting your location...");
+    console.log('Starting geolocation...');
 
-    // Clear any existing timeout
-    if (locationTimeoutRef.current) {
-      clearTimeout(locationTimeoutRef.current);
-    }
-
-    // Fallback to less accurate but faster location after 8 seconds
-    const fallbackTimeout = setTimeout(() => {
-      // Try with lower accuracy settings
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
-
-          if (mapInstanceRef.current) {
-            mapInstanceRef.current.setCenter({ lat, lng });
-            mapInstanceRef.current.setZoom(16);
-            placeMarker(lat, lng);
-            reverseGeocode(lat, lng);
-            toast.dismiss(loadingToast);
-            toast.success("Location found (approximate)");
-          }
-          setIsGettingLocation(false);
-        },
-        (fallbackError) => {
-          console.error("Fallback location error:", fallbackError);
-          let errorMessage = "Unable to get your location.";
-
-          switch (fallbackError.code) {
-            case fallbackError.PERMISSION_DENIED:
-              errorMessage = "Location access denied. Please enable location permissions.";
-              break;
-            case fallbackError.POSITION_UNAVAILABLE:
-              errorMessage = "Location information is unavailable. Please try again.";
-              break;
-            case fallbackError.TIMEOUT:
-              errorMessage = "Location request timed out. Please select manually on the map.";
-              break;
-          }
-
-          toast.dismiss(loadingToast);
-          toast.error(errorMessage);
-          setIsGettingLocation(false);
-        },
-        {
-          enableHighAccuracy: false, // Lower accuracy for faster response
-          timeout: 15000, // 15 seconds timeout for fallback
-          maximumAge: 600000, // 10 minutes - allow cached location
-        }
-      );
-    }, 8000);
-
-    locationTimeoutRef.current = fallbackTimeout;
-
-    // Primary attempt with high accuracy
+    // First, try to get cached location quickly
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        // Clear fallback timeout since we got accurate location
-        if (locationTimeoutRef.current) {
-          clearTimeout(locationTimeoutRef.current);
-          locationTimeoutRef.current = undefined;
-        }
-
+        console.log('Got cached/quick location:', position.coords);
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
@@ -274,19 +213,59 @@ export const useGoogleMaps = ({
           mapInstanceRef.current.setZoom(16);
           placeMarker(lat, lng);
           reverseGeocode(lat, lng);
-          toast.dismiss(loadingToast);
-          toast.success("Precise location found");
+          toast.success("Location found!");
         }
         setIsGettingLocation(false);
       },
       (error) => {
-        // Let the fallback timeout handle the error
-        console.warn("Primary location request failed, waiting for fallback:", error);
+        console.log('Quick location failed, trying high accuracy:', error);
+        
+        // If quick location fails, try with high accuracy but longer timeout
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            console.log('Got high accuracy location:', position.coords);
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.setCenter({ lat, lng });
+              mapInstanceRef.current.setZoom(16);
+              placeMarker(lat, lng);
+              reverseGeocode(lat, lng);
+              toast.success("Precise location found!");
+            }
+            setIsGettingLocation(false);
+          },
+          (highAccuracyError) => {
+            console.error('High accuracy location also failed:', highAccuracyError);
+            setIsGettingLocation(false);
+            
+            let errorMessage = "Unable to get your location.";
+            switch (highAccuracyError.code) {
+              case highAccuracyError.PERMISSION_DENIED:
+                errorMessage = "Location access denied. Please enable location permissions in your browser settings.";
+                break;
+              case highAccuracyError.POSITION_UNAVAILABLE:
+                errorMessage = "Location information is unavailable. Please try again or select manually on the map.";
+                break;
+              case highAccuracyError.TIMEOUT:
+                errorMessage = "Location request timed out. Please select manually by clicking on the map.";
+                break;
+            }
+            
+            toast.error(errorMessage);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 20000, // 20 seconds for high accuracy
+            maximumAge: 60000, // 1 minute
+          }
+        );
       },
       {
-        enableHighAccuracy: true,
-        timeout: 8000, // 8 seconds for high accuracy attempt
-        maximumAge: 300000, // 5 minutes
+        enableHighAccuracy: false,
+        timeout: 5000, // 5 seconds for quick attempt
+        maximumAge: 300000, // 5 minutes for cached location
       }
     );
   }, [placeMarker, reverseGeocode, isGettingLocation]);
@@ -296,6 +275,7 @@ export const useGoogleMaps = ({
       if (markerRef.current) {
         markerRef.current.setMap(null);
         markerRef.current = null;
+        console.log('Map cleared');
       }
     } catch (error) {
       console.warn("Error clearing map:", error);
@@ -307,6 +287,7 @@ export const useGoogleMaps = ({
       mapInstanceRef.current.setCenter({ lat, lng });
       mapInstanceRef.current.setZoom(16);
       placeMarker(lat, lng);
+      console.log('Map location set to:', lat, lng);
     }
   }, [isLoaded, placeMarker]);
 
@@ -316,8 +297,24 @@ export const useGoogleMaps = ({
       if (zoom) {
         mapInstanceRef.current.setZoom(zoom);
       }
+      console.log('Map center set to:', lat, lng);
     }
   }, [isLoaded]);
+
+  // Debug function to test map click
+  const testMapClick = useCallback(() => {
+    if (mapInstanceRef.current && isLoaded) {
+      const center = mapInstanceRef.current.getCenter();
+      if (center) {
+        const lat = center.lat();
+        const lng = center.lng();
+        console.log('Testing map click at center:', lat, lng);
+        placeMarker(lat, lng);
+        reverseGeocode(lat, lng);
+        toast.success("Test marker placed at map center");
+      }
+    }
+  }, [isLoaded, placeMarker, reverseGeocode]);
 
   return {
     mapRef,
@@ -330,5 +327,6 @@ export const useGoogleMaps = ({
     setMapCenter,
     placeMarker,
     reverseGeocode,
+    testMapClick, // Add this for debugging
   };
 };

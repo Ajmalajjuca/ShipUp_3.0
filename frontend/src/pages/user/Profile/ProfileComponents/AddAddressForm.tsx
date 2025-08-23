@@ -65,6 +65,7 @@ const AddAddressForm: React.FC = () => {
     isGettingLocation,
     getCurrentLocation,
     clearMap,
+    testMapClick,
   } = useGoogleMaps({
     onLocationSelect: handleLocationSelect,
   });
@@ -146,7 +147,7 @@ const AddAddressForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (!validate()) {
       const firstError = Object.values(errors)[0];
       if (firstError) {
@@ -154,7 +155,7 @@ const AddAddressForm: React.FC = () => {
       }
       return;
     }
-  
+
     // Optional: Check if location is selected
     if (!formData.latitude || !formData.longitude) {
       const proceed = window.confirm(
@@ -164,7 +165,7 @@ const AddAddressForm: React.FC = () => {
         return;
       }
     }
-  
+
     try {
       setLoading(true);
       const response = await userService.addAddress({
@@ -177,7 +178,7 @@ const AddAddressForm: React.FC = () => {
         contactName: formData.contactName || undefined,
         contactPhone: formData.contactPhone || undefined,
       });
-  
+
       console.log("Address added:", response);
       toast.success("Address added successfully!");
       navigate("/address");
@@ -457,6 +458,7 @@ const AddAddressForm: React.FC = () => {
             isGettingLocation={isGettingLocation}
             onGetCurrentLocation={handleGetCurrentLocation}
             onClearMap={handleClearMap}
+            testMapClick={testMapClick}
             height="h-80"
           />
 

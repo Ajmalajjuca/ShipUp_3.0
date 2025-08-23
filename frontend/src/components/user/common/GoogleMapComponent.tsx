@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigation, Pencil, MapPinOff, Loader2 } from 'lucide-react';
+import { Navigation, Pencil, MapPinOff, Loader2, TestTube } from 'lucide-react';
 
 interface GoogleMapComponentProps {
   mapRef: React.RefObject<HTMLDivElement | null>;
@@ -11,6 +11,7 @@ interface GoogleMapComponentProps {
   isGettingLocation?: boolean;
   onGetCurrentLocation: () => void;
   onClearMap: () => void;
+  testMapClick?: () => void; // Add this for debugging
   height?: string;
   showControls?: boolean;
   showCoordinates?: boolean;
@@ -26,10 +27,16 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
   isGettingLocation = false,
   onGetCurrentLocation,
   onClearMap,
+  testMapClick,
   height = "h-64",
   showControls = true,
   showCoordinates = true,
 }) => {
+  const handleMapContainerClick = (e: React.MouseEvent) => {
+    console.log('Map container clicked:', e);
+    // Don't prevent propagation - let it reach the Google Map
+  };
+
   return (
     <div className="mb-6">
       {showControls && (
@@ -55,6 +62,21 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
                 </>
               )}
             </button>
+            
+            {/* Debug button */}
+            {testMapClick && (
+              <button
+                type="button"
+                onClick={testMapClick}
+                disabled={!isLoaded}
+                className="flex items-center px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
+                title="Test map click at center"
+              >
+                <TestTube size={16} className="mr-1" />
+                <span>Test Click</span>
+              </button>
+            )}
+            
             <button
               type="button"
               onClick={onClearMap}
@@ -70,11 +92,16 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
       )}
       
       <div className="relative border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        {/* Map container */}
+        {/* Map container - CRITICAL: No pointer-events blocking */}
         <div 
           ref={mapRef} 
-          className={`${height} w-full bg-gray-50`}
-          style={{ minHeight: '256px' }}
+          className={`${height} w-full bg-gray-50 cursor-crosshair`}
+          style={{ 
+            minHeight: '256px',
+            // Ensure map can receive clicks
+            pointerEvents: isLoaded ? 'auto' : 'none'
+          }}
+          onClick={handleMapContainerClick}
         />
 
         {/* Loading state overlay */}
@@ -117,7 +144,16 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
           </div>
         )}
 
-        {/* Selected address info - only show when map is loaded */}
+        {/* Debug info overlay */}
+        {isLoaded && (
+          <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs p-2 rounded">
+            <div>Map Loaded: {isLoaded ? '✅' : '❌'}</div>
+            <div>Has Coordinates: {latitude && longitude ? '✅' : '❌'}</div>
+            <div>Click Status: Ready</div>
+          </div>
+        )}
+
+        {/* Selected address info */}
         {isLoaded && !error && (
           <div className="absolute bottom-2 left-2 right-2 bg-white bg-opacity-95 backdrop-blur-sm p-3 rounded-lg shadow-md border border-gray-200">
             <div className="flex items-start">
@@ -125,7 +161,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-gray-700 text-sm mb-1">Selected Address:</p>
                 <p className="text-gray-600 text-sm leading-tight break-words">
-                  {addressFromMap || "No address selected. Click on the map to place a marker."}
+                  {addressFromMap || "No address selected. Click anywhere on the map to place a marker."}
                 </p>
               </div>
             </div>
@@ -138,7 +174,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
         <div className="mt-3 space-y-2">
           <p className="text-sm text-gray-500 flex items-center">
             <Pencil size={14} className="mr-2 flex-shrink-0" />
-            Click on the map to place a marker, or drag the marker to adjust the location.
+            Click anywhere on the map to place a marker, or drag the marker to adjust the location.
           </p>
           
           {showCoordinates && latitude && longitude && (
@@ -146,6 +182,11 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
               Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
             </p>
           )}
+
+          {/* Debug instructions */}
+          <p className="text-xs text-blue-500">
+            Debug: If manual clicking doesn't work, try the "Test Click" button above.
+          </p>
         </div>
       )}
 
@@ -153,7 +194,7 @@ const GoogleMapComponent: React.FC<GoogleMapComponentProps> = ({
       {error && (
         <div className="mt-3">
           <p className="text-sm text-red-500">
-            Unable to load map. Please check your internet connection and try again.
+            Unable to load map. Please check your internet connection and Google Maps API key.
           </p>
         </div>
       )}
