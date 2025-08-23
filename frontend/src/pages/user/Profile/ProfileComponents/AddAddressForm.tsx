@@ -179,7 +179,7 @@ const AddAddressForm: React.FC = () => {
     }
 
     if (!formData.latitude || !formData.longitude) {
-      toast.warning("No map location selected. Address will be saved without precise coordinates.");
+      toast.error("No map location selected. Address will be saved without precise coordinates.");
     }
 
     try {
@@ -202,7 +202,7 @@ const AddAddressForm: React.FC = () => {
     } catch (error) {
       const errorResponse = error as ErrorResponse;
       const errorMessage = errorResponse?.response?.data?.message || 
-                          errorResponse?.message ||
+                          
                           "Failed to save address. Please try again.";
       toast.error(errorMessage);
     } finally {

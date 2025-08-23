@@ -9698,3 +9698,4 @@
 {"level":"info","message":"::1 - 6878bb8347d0df7650fcc64c [23/Aug/2025:15:46:15 +0000] \"PUT /api/v1/users/addresses/68a9d669e1dd1691765d7797/set-default HTTP/1.1\" 200 605 \"http://localhost:5173/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" 834.188 ms","timestamp":"2025-08-23T15:46:15.364Z"}
 {"level":"info","message":"::1 - 6878bb8347d0df7650fcc64c [23/Aug/2025:15:46:19 +0000] \"GET /api/v1/users/addresses HTTP/1.1\" 200 - \"http://localhost:5173/\" \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36\" 337.483 ms","timestamp":"2025-08-23T15:46:19.930Z"}
 {"level":"warn","message":"Database disconnected","timestamp":"2025-08-23T15:57:08.258Z"}
+{"level":"info","message":"Database reconnected","timestamp":"2025-08-23T16:00:01.685Z"}
