@@ -19,11 +19,19 @@ export const useGoogleMaps = ({
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string>("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const isInitialized = useRef(false);
+  const locationTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Cleanup function to properly remove map elements
   const cleanup = useCallback(() => {
     try {
+      // Clear location timeout if active
+      if (locationTimeoutRef.current) {
+        clearTimeout(locationTimeoutRef.current);
+        locationTimeoutRef.current = undefined;
+      }
+
       if (markerRef.current) {
         markerRef.current.setMap(null);
         markerRef.current = null;
@@ -186,8 +194,78 @@ export const useGoogleMaps = ({
       return;
     }
 
+    // Prevent multiple simultaneous requests
+    if (isGettingLocation) {
+      return;
+    }
+
+    setIsGettingLocation(true);
+    
+    // Show loading toast
+    const loadingToast = toast.loading("Getting your location...");
+
+    // Clear any existing timeout
+    if (locationTimeoutRef.current) {
+      clearTimeout(locationTimeoutRef.current);
+    }
+
+    // Fallback to less accurate but faster location after 8 seconds
+    const fallbackTimeout = setTimeout(() => {
+      // Try with lower accuracy settings
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter({ lat, lng });
+            mapInstanceRef.current.setZoom(16);
+            placeMarker(lat, lng);
+            reverseGeocode(lat, lng);
+            toast.dismiss(loadingToast);
+            toast.success("Location found (approximate)");
+          }
+          setIsGettingLocation(false);
+        },
+        (fallbackError) => {
+          console.error("Fallback location error:", fallbackError);
+          let errorMessage = "Unable to get your location.";
+
+          switch (fallbackError.code) {
+            case fallbackError.PERMISSION_DENIED:
+              errorMessage = "Location access denied. Please enable location permissions.";
+              break;
+            case fallbackError.POSITION_UNAVAILABLE:
+              errorMessage = "Location information is unavailable. Please try again.";
+              break;
+            case fallbackError.TIMEOUT:
+              errorMessage = "Location request timed out. Please select manually on the map.";
+              break;
+          }
+
+          toast.dismiss(loadingToast);
+          toast.error(errorMessage);
+          setIsGettingLocation(false);
+        },
+        {
+          enableHighAccuracy: false, // Lower accuracy for faster response
+          timeout: 15000, // 15 seconds timeout for fallback
+          maximumAge: 600000, // 10 minutes - allow cached location
+        }
+      );
+    }, 8000);
+
+    locationTimeoutRef.current = fallbackTimeout;
+
+    // Primary attempt with high accuracy
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        // Clear fallback timeout since we got accurate location
+        if (locationTimeoutRef.current) {
+          clearTimeout(locationTimeoutRef.current);
+          locationTimeoutRef.current = undefined;
+        }
+
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
 
@@ -196,35 +274,22 @@ export const useGoogleMaps = ({
           mapInstanceRef.current.setZoom(16);
           placeMarker(lat, lng);
           reverseGeocode(lat, lng);
+          toast.dismiss(loadingToast);
+          toast.success("Precise location found");
         }
+        setIsGettingLocation(false);
       },
       (error) => {
-        console.error("Error getting location:", error);
-        let errorMessage = "Unable to get your location.";
-
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Location access denied by user.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "Location information is unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMessage = "Location request timed out.";
-            break;
-        }
-
-        toast.error(errorMessage + " Please select manually on the map.");
+        // Let the fallback timeout handle the error
+        console.warn("Primary location request failed, waiting for fallback:", error);
       },
       {
-        enableHighAccuracy: false,
-        timeout: 30000,
-        maximumAge: 0, // 5 minutes
+        enableHighAccuracy: true,
+        timeout: 8000, // 8 seconds for high accuracy attempt
+        maximumAge: 300000, // 5 minutes
       }
     );
-  }, [placeMarker, reverseGeocode]);
-
-  
+  }, [placeMarker, reverseGeocode, isGettingLocation]);
 
   const clearMap = useCallback(() => {
     try {
@@ -258,6 +323,7 @@ export const useGoogleMaps = ({
     mapRef,
     isLoaded,
     error,
+    isGettingLocation,
     getCurrentLocation,
     clearMap,
     setMapLocation,
