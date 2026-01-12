@@ -202,41 +202,39 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
-              Vehicle Image
-            </label>
-            <div className="flex items-center space-x-4">
-              <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden">
-                {formData.imageUrl ? (
-                  <img
-                    src={formData.imageUrl}
-                    alt="Vehicle"
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <Truck size={24} className="text-gray-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
-                  <span className="flex items-center">
-                    <Upload size={16} className="mr-2" />
-                    Upload Image
-                  </span>
-                  <input
-                    type="file"
-                    id="imageUpload"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="sr-only"
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  PNG, JPG, GIF up to 10MB
-                </p>
-              </div>
-            </div>
-          </div>
+  <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
+    Vehicle Image
+  </label>
+  <div className="flex items-center space-x-4">
+    <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden">
+      {formData.imageUrl ? (
+        <img
+          src={formData.imageUrl}
+          alt="Vehicle"
+          className="h-full w-full object-contain"
+        />
+      ) : (
+        <Truck size={24} className="text-gray-400" />
+      )}
+    </div>
+    <div className="flex-1">
+      <label className="inline-flex items-center cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 transition-colors">
+        <Upload size={16} className="mr-2" />
+        <span>Upload Image</span>
+        <input
+          type="file"
+          id="imageUpload"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="sr-only"
+        />
+      </label>
+      <p className="text-xs text-gray-500 mt-1">
+        PNG, JPG, GIF up to 10MB
+      </p>
+    </div>
+  </div>
+</div>
           
           <div className="space-y-2 md:col-span-2">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">
