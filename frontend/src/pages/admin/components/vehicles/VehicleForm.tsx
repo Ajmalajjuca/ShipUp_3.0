@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
-import { X, Save, Upload, AlertCircle, Truck } from 'lucide-react';
-import type { CreateVehicleInput, VehicleType } from '../../../../types/vehicle.types';
-import { vehicleService } from '../../../../services/vehicle.service';
-
+import React, { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
+import { X, Save, Upload, AlertCircle, Truck } from "lucide-react";
+import type {
+  CreateVehicleInput,
+  VehicleType,
+} from "../../../../types/vehicle.types";
+import { vehicleService } from "../../../../services/vehicle.service";
 
 interface VehicleFormProps {
   vehicle?: VehicleType | null;
@@ -11,13 +13,17 @@ interface VehicleFormProps {
   onSubmit: () => void;
 }
 
-const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit }) => {
+const VehicleForm: React.FC<VehicleFormProps> = ({
+  vehicle,
+  onClose,
+  onSubmit,
+}) => {
   const initialFormData: CreateVehicleInput = {
-    name: '',
-    description: '',
+    name: "",
+    description: "",
     maxWeight: 0,
     pricePerKm: 0,
-    imageUrl: ''
+    imageUrl: "",
   };
 
   const [formData, setFormData] = useState<CreateVehicleInput>(initialFormData);
@@ -32,33 +38,35 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
         description: vehicle.description,
         maxWeight: vehicle.maxWeight,
         pricePerKm: vehicle.pricePerKm,
-        imageUrl: vehicle.imageUrl || ''
+        imageUrl: vehicle.imageUrl || "",
       });
       setIsActive(vehicle.isActive ?? true);
     }
   }, [vehicle]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    
+
     // Handle numeric values
-    if (name === 'maxWeight' || name === 'pricePerKm') {
+    if (name === "maxWeight" || name === "pricePerKm") {
       setFormData({
         ...formData,
-        [name]: parseFloat(value) || 0
+        [name]: parseFloat(value) || 0,
       });
     } else {
       setFormData({
         ...formData,
-        [name]: value
+        [name]: value,
       });
     }
-    
+
     // Clear error for this field
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: "",
       });
     }
   };
@@ -69,27 +77,28 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
 
     // Create a FormData object to send to the server
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append("image", file);
 
     // Show some loading indicator if desired
     setIsSubmitting(true);
 
     // Upload the image to the server
-    vehicleService.uploadVehicleImage(formData)
-      .then(response => {
+    vehicleService
+      .uploadVehicleImage(formData)
+      .then((response) => {
         if (response.success && response.imageUrl) {
           // Update the form with the S3 URL
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            imageUrl: response.imageUrl
+            imageUrl: response.imageUrl,
           }));
         } else {
-          toast.error('Failed to upload image');
+          toast.error("Failed to upload image");
         }
       })
-      .catch(error => {
-        console.error('Error uploading image:', error);
-        toast.error('Error uploading image');
+      .catch((error) => {
+        console.error("Error uploading image:", error);
+        toast.error("Error uploading image");
       })
       .finally(() => {
         setIsSubmitting(false);
@@ -98,65 +107,69 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) {
-      newErrors.name = 'Vehicle name is required';
+      newErrors.name = "Vehicle name is required";
     }
-    
+
     if (!formData.description?.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = "Description is required";
     }
-    
-    const maxWeightValue = typeof formData.maxWeight === 'string' 
-      ? parseFloat(formData.maxWeight) 
-      : formData.maxWeight;
-    
+
+    const maxWeightValue =
+      typeof formData.maxWeight === "string"
+        ? parseFloat(formData.maxWeight)
+        : formData.maxWeight;
+
     if (!maxWeightValue || maxWeightValue <= 0) {
-      newErrors.maxWeight = 'Max weight must be greater than 0';
+      newErrors.maxWeight = "Max weight must be greater than 0";
     }
-    
+
     if (!formData.pricePerKm || formData.pricePerKm <= 0) {
-      newErrors.pricePerKm = 'Price per km must be greater than 0';
+      newErrors.pricePerKm = "Price per km must be greater than 0";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       let response;
-      
+
       if (vehicle) {
         // Update existing vehicle
         response = await vehicleService.updateVehicle(vehicle.id, {
           ...formData,
-          isActive
+          isActive,
         });
       } else {
         // Create new vehicle
         response = await vehicleService.createVehicle(formData);
-        console.log('Vehicle created:', response);
-        
+        console.log("Vehicle created:", response);
       }
-      
+
       if (response.success) {
-        toast.success(vehicle ? 'Vehicle updated successfully' : 'Vehicle created successfully');
+        toast.success(
+          vehicle
+            ? "Vehicle updated successfully"
+            : "Vehicle created successfully"
+        );
         onSubmit();
       } else {
-        toast.error(response.message || 'Operation failed');
+        toast.error(response.message || "Operation failed");
       }
     } catch (error) {
-      console.error('Error saving vehicle:', error);
-      toast.error('An error occurred while saving the vehicle');
+      console.error("Error saving vehicle:", error);
+      toast.error("An error occurred while saving the vehicle");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +179,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
       <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
         <h3 className="text-lg font-medium text-gray-700">
-          {vehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+          {vehicle ? "Edit Vehicle" : "Add New Vehicle"}
         </h3>
         <button
           onClick={onClose}
@@ -176,11 +189,14 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
           <X size={20} />
         </button>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700"
+            >
               Vehicle Name *
             </label>
             <input
@@ -190,7 +206,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               value={formData.name}
               onChange={handleChange}
               className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                errors.name
+                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               } sm:text-sm`}
             />
             {errors.name && (
@@ -200,44 +218,50 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
-  <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700">
-    Vehicle Image
-  </label>
-  <div className="flex items-center space-x-4">
-    <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden">
-      {formData.imageUrl ? (
-        <img
-          src={formData.imageUrl}
-          alt="Vehicle"
-          className="h-full w-full object-contain"
-        />
-      ) : (
-        <Truck size={24} className="text-gray-400" />
-      )}
-    </div>
-    <div className="flex-1">
-      <label className="inline-flex items-center cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 transition-colors">
-        <Upload size={16} className="mr-2" />
-        <span>Upload Image</span>
-        <input
-          type="file"
-          id="imageUpload"
-          accept="image/*"
-          onChange={handleFileUpload}
-          className="sr-only"
-        />
-      </label>
-      <p className="text-xs text-gray-500 mt-1">
-        PNG, JPG, GIF up to 10MB
-      </p>
-    </div>
-  </div>
-</div>
-          
+            <label
+              htmlFor="imageUrl"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Vehicle Image
+            </label>
+            <div className="flex items-center space-x-4">
+              <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden">
+                {formData.imageUrl ? (
+                  <img
+                    src={formData.imageUrl}
+                    alt="Vehicle"
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <Truck size={24} className="text-gray-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <label className="inline-flex items-center cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 transition-colors">
+                  <Upload size={16} className="mr-2" />
+                  <span>Upload Image</span>
+                  <input
+                    type="file"
+                    id="imageUpload"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="sr-only"
+                  />
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG, JPG, GIF up to 10MB
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2 md:col-span-2">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700"
+            >
               Description *
             </label>
             <textarea
@@ -247,7 +271,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               value={formData.description}
               onChange={handleChange}
               className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.description ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                errors.description
+                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               } sm:text-sm`}
             />
             {errors.description && (
@@ -257,9 +283,12 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
-            <label htmlFor="maxWeight" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="maxWeight"
+              className="block text-sm font-medium text-gray-700"
+            >
               Max Weight (kg) *
             </label>
             <input
@@ -271,7 +300,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               min="0"
               step="0.1"
               className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.maxWeight ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                errors.maxWeight
+                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               } sm:text-sm`}
             />
             {errors.maxWeight && (
@@ -281,9 +312,12 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               </p>
             )}
           </div>
-          
+
           <div className="space-y-2">
-            <label htmlFor="pricePerKm" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="pricePerKm"
+              className="block text-sm font-medium text-gray-700"
+            >
               Price per KM (₹) *
             </label>
             <input
@@ -295,7 +329,9 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               min="0"
               step="0.5"
               className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.pricePerKm ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                errors.pricePerKm
+                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
               } sm:text-sm`}
             />
             {errors.pricePerKm && (
@@ -305,10 +341,12 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
               </p>
             )}
           </div>
-          
+
           {vehicle && (
             <div className="space-y-2">
-              <span className="block text-sm font-medium text-gray-700">Status</span>
+              <span className="block text-sm font-medium text-gray-700">
+                Status
+              </span>
               <div className="flex items-center space-x-4">
                 <label className="inline-flex items-center">
                   <input
@@ -334,7 +372,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <button
             type="button"
@@ -350,16 +388,32 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
           >
             {isSubmitting ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Processing...
               </>
             ) : (
               <>
                 <Save size={18} className="mr-2" />
-                {vehicle ? 'Update Vehicle' : 'Save Vehicle'}
+                {vehicle ? "Update Vehicle" : "Save Vehicle"}
               </>
             )}
           </button>
@@ -369,4 +423,4 @@ const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onClose, onSubmit })
   );
 };
 
-export default VehicleForm; 
+export default VehicleForm;
