@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, AlertCircle, CheckCircle, X, Search, RefreshCw, Truck, Eye, Filter, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { vehicleService } from '../../../../../services/vehicle.service';
-import { VehicleType } from '../../../../../types/vehicle.types';
+
 import VehicleForm from './VehicleForm';
+import type { VehicleType } from '../../../../types/vehicle.types';
+import { vehicleService } from '../../../../services/vehicle.service';
 
 interface VehicleListProps {
   onViewVehicle?: (id: string) => void;

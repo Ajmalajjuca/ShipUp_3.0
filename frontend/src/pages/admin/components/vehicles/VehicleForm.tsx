@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { X, Save, Upload, AlertCircle, Truck } from 'lucide-react';
-import { vehicleService } from '../../../../../services/vehicle.service';
-import { VehicleType, CreateVehicleInput } from '../../../../../types/vehicle.types';
+import type { CreateVehicleInput, VehicleType } from '../../../../types/vehicle.types';
+import { vehicleService } from '../../../../services/vehicle.service';
+
 
 interface VehicleFormProps {
   vehicle?: VehicleType | null;
