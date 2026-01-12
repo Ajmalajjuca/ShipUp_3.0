@@ -15,7 +15,7 @@ class AuthService {
     console.log('response in auth', response);
     
 
-    const { user, accessToken, refreshToken } = response.data.data;
+    const { user, accessToken, refreshToken } = response.data;
     this.setRefreshToken(refreshToken);
     this.setTokens(accessToken);
     return user;
@@ -29,7 +29,7 @@ class AuthService {
     }>>('/admin/login', { email, password });
     console.log('Admin login response:', response);
     
-    const { user, accessToken, refreshToken } = response.data.data;
+    const { user, accessToken, refreshToken } = response.data;
     this.setRefreshToken(refreshToken);
     this.setTokens(accessToken);
     return user;
@@ -44,7 +44,7 @@ class AuthService {
     console.log('rwsiatration ',response);
     
 
-    const { user, accessToken, refreshToken } = response.data.data;
+    const { user, accessToken, refreshToken } = response.data;
     this.setRefreshToken(refreshToken);
     this.setTokens(accessToken);
     return user;
@@ -68,13 +68,13 @@ class AuthService {
       massege: string;
     }>>('/auth/verify-otp', data);
     console.log('OTP verification response:', response);
-    return response.data.data;
+    return response.data;
   }
 
   async resendOtp(type: string): Promise<{ massage: string; }> {
     const response = await api.post<ApiResponse<{ massage: string; }>>('/auth/resend-otp', { type });
     console.log('Resend OTP response:', response);
-    return response.data.data;
+    return response.data;
   }
 
   async getCurrentUser(): Promise<User | null> {
@@ -85,7 +85,7 @@ class AuthService {
 
     try {
       const response = await api.get<ApiResponse<User>>('/auth/me');
-      return response.data.data;
+      return response.data;
     } catch (error) {
       console.log('Failed to fetch current user:', error);
       
@@ -101,7 +101,7 @@ class AuthService {
         accessToken: string;
       }>>('/auth/refresh-token');
       console.log('Token refresh response:', response);
-      const { accessToken} = response.data.data;
+      const { accessToken} = response.data;
       this.setTokens(accessToken);
       return accessToken;
     } catch (error) {

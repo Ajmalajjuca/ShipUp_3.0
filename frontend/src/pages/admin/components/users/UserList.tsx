@@ -24,8 +24,10 @@ const UserList = ({ onViewUser = () => {} }) => {
       const pagination = { page: 1, limit: 10 };
       const filter = { role: 'customer', };
 
-      const response = await adminService.getAllUsers(pagination, filter);      
-      setUsers(response.data.users.data || []);
+      const response = await adminService.getAllUsers(pagination, filter);
+      console.log("response.data", response.users.data);
+            
+      setUsers(response.users.data || []);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError('Failed to fetch users. Please try again.');

@@ -11,7 +11,7 @@ export const sendResponse = <T>(
   const response: ApiResponse<T> = {
     success: statusCode < 400,
     message,
-    data,
+    ...data,
     error,
     timestamp: new Date(),
   };

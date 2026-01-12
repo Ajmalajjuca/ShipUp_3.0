@@ -30,7 +30,7 @@ import PartnerList from "./components/partners/PartnerList";
 import PartnerRequest from "./components/partners/PartnerRequest";
 // import PartnerList from "./components/partners/PartnerList";
 // import PartnerRequest from "./components/partners/PartnerRequest";
-// import VehicleList from "./components/vehicles/VehicleList";
+import VehicleList from "./components/vehicles/VehicleList";
 // import { useNavigate, useLocation } from "react-router-dom";
 // import { sessionManager } from "../../../utils/sessionManager";
 // import PartnerRequestView from "./components/partners/PartnerRequestView";
@@ -167,9 +167,6 @@ const AdminDashboard: React.FC = () => {
     string | null
   >(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null
-  );
   const [selectedOrderId,setSelectedOrderId]= useState<string|null>(null)
   const navigate = useNavigate();
 
@@ -317,8 +314,8 @@ const AdminDashboard: React.FC = () => {
         return (
           <PartnerRequest onViewPartner={(id) => setSelectedPartnerId(id)} />
         );
-    //   case "Vehicle List":
-    //     return <VehicleList onViewVehicle={(id) => setSelectedVehicleId(id)} />;
+      case "Vehicle List":
+        return <VehicleList  />;
     //   case "All Orders":
     //     return <AllOrders onViewOrder={(id) => setSelectedOrderId(id)} />;
     //   case "Pending Orders":

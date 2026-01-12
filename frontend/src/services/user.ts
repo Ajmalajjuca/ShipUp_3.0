@@ -6,7 +6,7 @@ class UserService {
     const response = await api.put(`/users/profile`, data, {
         headers: { "Content-Type": "multipart/form-data" },
     });
-    return response.data.data;
+    return response.data;
   }
   addAddress = async (addressData: Address): Promise<ApiResponse<Address>> => {
     console.log("Adding address with data:", addressData);

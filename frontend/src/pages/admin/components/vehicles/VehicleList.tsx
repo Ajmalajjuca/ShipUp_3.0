@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, AlertCircle, CheckCircle, X, Search, RefreshCw, Truck, Eye, Filter, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { vehicleService } from '../../../../../services/vehicle.service';
-import { VehicleType } from '../../../../../types/vehicle.types';
+
 import VehicleForm from './VehicleForm';
+import type { VehicleType } from '../../../../types/vehicle.types';
+import { vehicleService } from '../../../../services/vehicle.service';
 
-interface VehicleListProps {
-  onViewVehicle?: (id: string) => void;
-}
 
-const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
+
+const VehicleList: React.FC = () => {
   const [vehicles, setVehicles] = useState<VehicleType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -27,6 +26,9 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
     setIsLoading(true);
     try {
       const response = await vehicleService.getVehicles();
+      console.log('====================================');
+      console.log('Response:', response);
+      console.log('====================================');
       if (response.success) {
         setVehicles(response.vehicles);
       } else {
@@ -75,19 +77,19 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
   };
 
   const handleToggleStatus = async (vehicle: VehicleType) => {
-    if (!vehicle.id) return;
+    if (!vehicle._id) return;
     
-    setStatusUpdating(prev => ({ ...prev, [vehicle.id]: true }));
+    setStatusUpdating(prev => ({ ...prev, [vehicle._id]: true }));
     
     try {
-      const response = await vehicleService.toggleVehicleStatus(vehicle.id);
+      const response = await vehicleService.toggleVehicleStatus(vehicle._id);
       
       if (response.success) {
         toast.success(`Vehicle status ${vehicle.isActive ? 'deactivated' : 'activated'} successfully`);
         // Update the vehicle in the list
         setVehicles(prevVehicles => 
           prevVehicles.map(v => 
-            v.id === vehicle.id ? { ...v, isActive: !v.isActive } : v
+            v._id === vehicle._id ? { ...v, isActive: !v.isActive } : v
           )
         );
       } else {
@@ -97,14 +99,13 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
       console.error('Error updating vehicle status:', error);
       toast.error('An error occurred while updating the vehicle status');
     } finally {
-      setStatusUpdating(prev => ({ ...prev, [vehicle.id]: false }));
+      setStatusUpdating(prev => ({ ...prev, [vehicle._id]: false }));
     }
   };
 
   const handleViewVehicle = (id: string) => {
-    if (onViewVehicle) {
-      onViewVehicle(id);
-    } else {
+    
+   
       toast('View functionality is not available', {
         icon: '👁️',
         style: {
@@ -113,7 +114,7 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
           color: '#fff',
         },
       });
-    }
+    
   };
 
   const handleFilterChange = (type: string | null) => {
@@ -251,7 +252,7 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredVehicles.map((vehicle) => (
-                      <tr key={vehicle.id} className="hover:bg-gray-50">
+                      <tr key={vehicle._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0 mr-3 bg-gray-100 rounded-full flex items-center justify-center">
@@ -292,14 +293,14 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button
                             onClick={() => handleToggleStatus(vehicle)}
-                            className={`relative inline-flex items-center h-6 rounded-full w-11 ${vehicle.isActive ? 'bg-green-500' : 'bg-gray-300'} ${statusUpdating[vehicle.id || ''] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                            disabled={statusUpdating[vehicle.id || '']}
+                            className={`relative inline-flex items-center h-6 rounded-full w-11 ${vehicle.isActive ? 'bg-green-500' : 'bg-gray-300'} ${statusUpdating[vehicle._id || ''] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                            disabled={statusUpdating[vehicle._id || '']}
                             title={vehicle.isActive ? 'Active - Click to deactivate' : 'Inactive - Click to activate'}
                           >
                             <span 
                               className={`inline-block w-4 h-4 transform transition-transform duration-200 ease-in-out bg-white rounded-full ${vehicle.isActive ? 'translate-x-6' : 'translate-x-1'}`} 
                             />
-                            {statusUpdating[vehicle.id || ''] && (
+                            {statusUpdating[vehicle._id || ''] && (
                               <span className="absolute inset-0 flex items-center justify-center">
                                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -314,7 +315,7 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => handleViewVehicle(vehicle.id)}
+                            onClick={() => handleViewVehicle(vehicle._id)}
                             className="text-blue-600 hover:text-blue-900 mr-3"
                             title="View vehicle details"
                           >
@@ -328,7 +329,7 @@ const VehicleList: React.FC<VehicleListProps> = ({ onViewVehicle }) => {
                             <Edit size={18} />
                           </button>
                           <button
-                            onClick={() => handleDelete(vehicle.id)}
+                            onClick={() => handleDelete(vehicle._id)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete vehicle"
                           >

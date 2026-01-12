@@ -1,6 +1,9 @@
 // src/interfaces/IModel/IVehicle.ts
 
-export interface IVehicle {
+import { Document } from "mongoose";
+
+export interface IVehicle extends Document {
+  vehicleId: string;
   name: string;
   description?: string;
   imageUrl?: string;

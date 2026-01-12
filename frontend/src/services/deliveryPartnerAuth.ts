@@ -15,7 +15,7 @@ class DeliveryPartnerAuthService {
     }>>('/partner/request-login-otp', { email });
     console.log('OTP request response:', response);
     
-    return response.data.data;
+    return response.data;
   }
 
   async verifyLoginOtp(email: string, otp: string): Promise<{
@@ -30,7 +30,7 @@ class DeliveryPartnerAuthService {
     }>>('/partner/verify-login-otp', { email, otp });
     console.log('OTP verification response:', response);
     
-    const { user, accessToken, refreshToken } = response.data.data;
+    const { user, accessToken, refreshToken } = response.data;
     this.setRefreshToken(refreshToken);
     this.setTokens(accessToken);
     return { user, accessToken, refreshToken };
@@ -119,7 +119,7 @@ class DeliveryPartnerAuthService {
 
     try {
       const response = await api.get<ApiResponse<PartnerUser>>('/partner/me');
-      return response.data.data;
+      return response.data;
     } catch (error) {
       console.log('Failed to fetch current partner:', error);
       
@@ -152,7 +152,7 @@ class DeliveryPartnerAuthService {
   bankingDetails: boolean;
         };
       }>>('/partner/verification-status');
-      return response.data.data;
+      return response.data;
     } catch (error) {
       console.error('Failed to get verification status:', error);
       return null;
@@ -166,7 +166,7 @@ class DeliveryPartnerAuthService {
       }>>('/partner/refresh-token');
       console.log('Partner token refresh response:', response);
       
-      const { accessToken } = response.data.data;
+      const { accessToken } = response.data;
       this.setTokens(accessToken);
       return accessToken;
     } catch (error) {

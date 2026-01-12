@@ -27,7 +27,7 @@ const PartnerRequest: React.FC<PartnerRequestProps> = ({ onViewPartner }) => {
       
       
       // Filter partners that are not fully verified
-      const pendingPartners = (response?.data?.partners?.data || []).filter((partner: PartnerRequest) => 
+      const pendingPartners = (response?.partners?.data || []).filter((partner: PartnerRequest) => 
         !partner.bankDetailsCompleted || 
         !partner.personalDocumentsCompleted || 
         !partner.vehicleDetailsCompleted

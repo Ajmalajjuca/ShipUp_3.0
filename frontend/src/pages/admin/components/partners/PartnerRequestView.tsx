@@ -38,7 +38,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
     try {
       const partnerRes = await adminService.getPartnerById(partnerId);
       console.log('Fetched partner details:', partnerRes);
-      const vehicleId = partnerRes?.data?.partner?.vehicleId;
+      const vehicleId = partnerRes?.partner?.vehicleId;
 
       let vehicleDetails = null;
 
@@ -54,7 +54,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
           toast.error('Failed to fetch vehicle details');
         }
       };
-      setPartner(partnerRes.data.partner ? { ...partnerRes?.data?.partner, vehicleDetails } : null);
+      setPartner(partnerRes.partner ? { ...partnerRes?.partner, vehicleDetails } : null);
     } catch (error) {
       console.error('Error fetching partner details:', error);
       toast.error('Failed to fetch partner details');

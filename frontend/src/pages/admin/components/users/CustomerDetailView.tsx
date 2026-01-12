@@ -44,7 +44,7 @@ const CustomerDetailView: React.FC<CustomerDetailViewProps> = ({
       const response = await adminService.getUserById(userId);
       setCustomer((prev) => ({
         ...prev,
-        ...response.data.user,
+        ...response.user,
         orders: prev?.orders || [],
       }));
     } catch (error) {
