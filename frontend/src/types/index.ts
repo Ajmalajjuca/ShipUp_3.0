@@ -25,10 +25,12 @@ export interface User {
   permissions: string[];
   isEmailVerified: boolean;
   profilePicture?: string;
+  isActive: boolean;
   createdAt: Date;
   lastLogin?: Date;
   loyaltyPoints?: number;
   walletBalance?: number;
+  order: Order[];
 }
 export interface AuthState {
   user: User | null;
@@ -118,22 +120,70 @@ export interface DriverRegistrationData {
     formComponent: React.FC<unknown>;
   }
 
-  export interface PartnerUser {
-  id: string;
-  email: string;
-  fullName: string;
+export interface PartnerUser {
+  _id: string;
   partnerId: string;
-  role: string;
-  isVerified: boolean;
-  verificationStatus?: {
-    personal: boolean;
-    aadhar: boolean;
-    pan: boolean;
-    license: boolean;
-    vehicle: boolean;
-    bank: boolean;
+  fullName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  profilePicture?: string;
+
+  personalDocuments: {
+    aadharFront: string;
+    aadharBack: string;
+    panFront: string;
+    panBack: string;
+    licenseFront: string;
+    licenseBack: string;
+    aadharStatus: 'pending' | 'approved' | 'rejected';
+    panStatus: 'pending' | 'approved' | 'rejected';
+    licenseStatus: 'pending' | 'approved' | 'rejected';
   };
+
+  vehicalDocuments: {
+    vehicleType: string;
+    registrationNumber: string;
+    insuranceDocument: string;
+    pollutionDocument: string;
+    insuranceStatus: 'pending' | 'approved' | 'rejected';
+    pollutionStatus: 'pending' | 'approved' | 'rejected';
+  };
+
+  bankingDetails: {
+    accountHolderName: string;
+    accountNumber: string;
+    ifscCode: string;
+    upiId: string;
+    bankingStatus: 'pending' | 'approved' | 'rejected';
+  };
+
+  isAvailable: boolean;
+  isActive: boolean;
+  isVerified: boolean;
+  status: 'pending' | 'verified' | 'rejected';
+
+  hasPendingRequest: boolean;
+
+  bankDetailsCompleted: boolean;
+  personalDocumentsCompleted: boolean;
+  vehicleDetailsCompleted: boolean;
+
+  totalOrders: number;
+  ongoingOrders: number;
+  completedOrders: number;
+  canceledOrders: number;
+
+  location: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
 }
+
 
 export interface OrderDetails {
   pickupAddress: {
@@ -239,3 +289,23 @@ export interface AddressResponse {
   address: Address | null;
 }
 
+interface Order {
+  id: string;
+  createdAt: string;
+  pickupAddress: Address;
+  dropoffAddress: Address;
+  totalAmount: number;
+  status: string;
+  estimatedTime?: string;
+  distance?: number;
+  paymentMethod?: string;
+  vehicleName?: string;
+  driverId?: string;
+  driverName?: string;
+  driver: Driver;
+}
+
+interface Driver {
+  fullName: string;
+  mobileNumber: number;
+}

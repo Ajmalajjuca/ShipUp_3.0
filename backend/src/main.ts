@@ -15,6 +15,7 @@ import { SocketService } from './services/SocketService';
 import { handleError } from './utils/errorHandler';
 import { logger } from './utils/logger';
 import './container/container';
+import cookieParser from 'cookie-parser';
 
 
 class Application {
@@ -65,6 +66,7 @@ class Application {
     // Body parsing middleware
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    this.app.use(cookieParser());
     
     // Serve static files
     this.app.use('/uploads', express.static('uploads'));
@@ -80,7 +82,7 @@ class Application {
     this.app.get('/', (req, res) => {
       res.json({
         success: true,
-        message: 'Logistics Platform API',
+        message: 'ShipUp Platform API',
         version: '1.0.0',
         timestamp: new Date(),
         docs: '/api/v1/docs', // Future documentation endpoint

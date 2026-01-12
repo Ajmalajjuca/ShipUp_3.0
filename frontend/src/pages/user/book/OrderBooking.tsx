@@ -24,11 +24,7 @@ const OrderBooking: React.FC = () => {
   const [driverTracking, setDriverTracking] = useState<DriverTracking | null>(null);
   const driverLocationInterval = useRef< null>(null);
 
-  setVehicles([
-    
-  ]);
-  setOrderStatus(null);
-  setDriverTracking(null);
+
 
 
   const [orderDetails, setOrderDetails] = useState<OrderDetails>({
@@ -107,6 +103,9 @@ const OrderBooking: React.FC = () => {
 
 
   useEffect(() => {
+    setVehicles([]);
+  setOrderStatus(null);
+  setDriverTracking(null);
     return () => {
       if (driverLocationInterval.current) {
         clearInterval(driverLocationInterval.current);

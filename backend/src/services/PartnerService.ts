@@ -5,7 +5,7 @@ import { IOTPRepository } from '../interfaces/IRepository/IOTPRepository';
 import { createError } from '../utils/errorHandler';
 import { logger } from '../utils/logger';
 import { generateOTP } from '../utils/helpers';
-import { DocumentStatus, JWTPayload, OTPType, PartnerRegistrationData, UserRole } from '../types';
+import { DocumentStatus, JWTPayload, OTPType, PaginatedResult, PaginationOptions, PartnerRegistrationData, UserRole } from '../types';
 import config from '../config';
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { IPartner } from '../interfaces/IModel/IPartner';
@@ -448,6 +448,45 @@ async getPendingVerifications(): Promise<any[]> {
     throw error;
   }
 }
+
+async getAllPartners(
+  pagination?: PaginationOptions,
+  filter?:{
+    isActive?: boolean;
+    isVerified?: boolean;
+    search?: string;
+  }
+): Promise<PaginatedResult<IPartner> | IPartner[]> {
+  try {
+    console.log('====================================');
+    console.log('Getting all partners with filter:', filter, 'and pagination:', pagination);
+    console.log('====================================');
+    if(filter?.search) {
+      return this.partnerRepository.searchPartners(filter.search, pagination || { page: 1, limit: 10 });
+    }
+
+    let result : PaginatedResult<IPartner> | IPartner[];
+    console.log('filter:', filter);
+    
+    const queryFilter: any = {};
+    if(filter?.isVerified !== undefined) {
+      if(filter?.isActive !== undefined) {
+        queryFilter.isActive = filter.isActive;
+      }
+      queryFilter.isVerified = filter.isVerified;      
+
+      result = await this.partnerRepository.findVerifiedPartners(queryFilter,);
+    } else {  
+      result = await this.partnerRepository.findVerifiedPartners(queryFilter,);   
+    }
+    return result;
+
+  } catch (error) {
+    logger.error('Failed to get all partners:', error);
+    throw error;
+  }
+}
+
 
 async getDetailedVerificationStatus(partnerId: string): Promise<{
   isVerified: boolean;

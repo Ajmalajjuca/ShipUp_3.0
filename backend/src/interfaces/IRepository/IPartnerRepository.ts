@@ -14,6 +14,7 @@ export interface IPartnerRepository {
   updateVerificationStatus(partnerId: string, isVerified: boolean): Promise<IPartner | null>;
   searchPartners(searchTerm: string, pagination: any): Promise<any>;
   findVerifiedPartners(pagination?: any): Promise<any>;
+  findUnverifiedPartners(pagination: any): Promise<any>;
   findByStatus(status: string, pagination: any): Promise<any>;
   findActivePartners(pagination: any): Promise<any>;
   findByMobileNumber(phone: string): Promise<IPartner | null>;

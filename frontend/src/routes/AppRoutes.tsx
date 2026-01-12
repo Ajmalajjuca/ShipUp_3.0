@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 // Lazy imports
 const Homepage = lazy(() => import("../pages/user/Homepage"));
@@ -14,6 +15,9 @@ const OrderBooking = lazy(() => import("../pages/user/book/OrderBooking"));
 const PartnerRegistration = lazy(() => import("../pages/deliveryPartner/Registration/PartnerRegistration"));
 const PartnerLogin = lazy(() => import("../pages/deliveryPartner/Registration/PartnerLogin"));
 const PartnerVerificationPage = lazy(() => import("../pages/deliveryPartner/Registration/PartnerVerificationPage"));
+
+
+const AdminLoginPage = lazy(() => import("../pages/admin/AdminLoginPage"));
 
 // Fallback UI while components load
 const Loader = () => (
@@ -50,6 +54,10 @@ const AppRoutes = () => {
         <Route path="/partner/register" element={<PartnerRegistration />} />
         <Route path="/partner/verification" element={<PartnerVerificationPage />} />
         <Route path="/partner/login" element={<PartnerLogin />} />
+
+        {/* Admin Routes - Lazy load admin components */}
+        <Route path="/admin" element={<AdminLoginPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard/>} />
       </Routes>
     </Suspense>
   );

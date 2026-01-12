@@ -1,55 +1,124 @@
-// // Admin controller methods for document verification
+import { IUserService } from "../interfaces/IService/IUserService";
+import { IAuthService } from "../interfaces/IService/IAuthService";
+import { asyncHandler } from "../utils/errorHandler";
+import { sendSuccess } from "../utils/response";
+import { Request, Response, NextFunction } from "express";
+import { inject, injectable } from "tsyringe";
+import { IPartnerService } from "../interfaces/IService/IPartnerService";
 
-// // Get partner verification status
-// getPartnerVerificationStatus = asyncHandler(async (req: Request, res: Response) => {
-//   const { partnerId } = req.params;
-  
-//   const verificationData = await this.partnerService.getDetailedVerificationStatus(partnerId);
-  
-//   sendSuccess(res, 'Verification status retrieved successfully', verificationData);
-// });
+@injectable()
+export class AdminController {
+  constructor(
+    @inject("AuthService") private authService: IAuthService,
+    @inject("UserService") private userService: IUserService,
+    @inject("PartnerService") private partnerService: IPartnerService
+  ) {}
+  adminLogin = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { email, password } = req.body;
+      const { user, accessToken, refreshToken } =
+        await this.authService.adminLogin(email, password);
 
-// // Admin approve a specific document
-// approveDocument = asyncHandler(async (req: Request, res: Response) => {
-//   const { partnerId } = req.params;
-//   const { documentType } = req.body;
-  
-//   await this.partnerService.updateDocumentStatus(partnerId, documentType, 'approved');
-  
-//   const updatedStatus = await this.partnerService.getVerificationStatus(partnerId);
-  
-//   sendSuccess(res, `${documentType} document approved successfully`, updatedStatus);
-// });
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+      
 
-// // Admin reject a specific document
-// rejectDocument = asyncHandler(async (req: Request, res: Response) => {
-//   const { partnerId } = req.params;
-//   const { documentType, rejectionReason } = req.body;
-  
-//   if (!rejectionReason) {
-//     throw createError('Rejection reason is required', 400);
-//   }
-  
-//   await this.partnerService.updateDocumentStatus(partnerId, documentType, 'rejected', rejectionReason);
-  
-//   const updatedStatus = await this.partnerService.getVerificationStatus(partnerId);
-  
-//   sendSuccess(res, `${documentType} document rejected`, updatedStatus);
-// });
 
-// // Get all partners with pending document verification
-// getPendingVerifications = asyncHandler(async (req: Request, res: Response) => {
-//   const pendingPartners = await this.partnerService.getPendingVerifications();
-  
-//   sendSuccess(res, 'Pending verifications retrieved successfully', {
-//     total: pendingPartners.length,
-//     partners: pendingPartners
-//   });
-// });
+      sendSuccess(res, "Admin login successful", {
+        user,
+        accessToken,
+        refreshToken,
+      });
+    }
+  );
 
-// // Admin dashboard - verification statistics
-// getVerificationStats = asyncHandler(async (req: Request, res: Response) => {
-//   const stats = await this.partnerService.getVerificationStatistics();
-  
-//   sendSuccess(res, 'Verification statistics retrieved successfully', stats);
-// });
+  getAllUsers = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const filter: any = {};
+      if (req.query.role) filter.role = req.query.role;
+      
+      const users = await this.userService.getAllUsers({ page, limit }, filter);
+      sendSuccess(res, "Fetched all users", { users });
+    }
+  );
+
+  getUserById = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const userId = req.params.id;
+      const user = await this.userService.getUserById(userId);
+      sendSuccess(res, "Fetched user details", { user });
+    }
+  );
+
+  updateUserStatus = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const userId = req.params.id;
+      const updateData = req.body;
+      const updatedUser = await this.userService.updateUserStatus(userId, updateData);
+      sendSuccess(res, "User updated successfully", { user: updatedUser });
+    }
+    );
+
+    getAllPartners = asyncHandler(
+      async (req: Request, res: Response, next: NextFunction) => {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const filter: any = {};
+        if (req.query.isOnline !== undefined) {
+          filter['deliveryPartnerInfo.isOnline'] = req.query.isOnline === 'true';
+        }
+        
+        const partners = await this.partnerService.getAllPartners({ page, limit }, filter);        
+        sendSuccess(res, "Fetched all delivery partners", { partners });
+      }
+    );
+
+    getAllPartnersRequest = asyncHandler(
+      async (req: Request, res: Response, next: NextFunction) => {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const filter: any = {};
+        
+        const partners = await this.partnerService.getAllPartners({ page, limit }, filter);        
+        sendSuccess(res, "Fetched all delivery partner requests", { partners });
+      }
+    );
+
+    getDetailedVerificationStatus = asyncHandler(
+      async (req: Request, res: Response, next: NextFunction) => {
+        const partnerId = req.params.id;
+        const status = await this.partnerService.getDetailedVerificationStatus(partnerId);
+        sendSuccess(res, "Fetched detailed verification status", { status });
+      }
+    );
+
+    updatePartnerDocumentStatus = asyncHandler(
+      async (req: Request, res: Response, next: NextFunction) => {
+        const partnerId = req.params.id;
+        const { documentType, status, rejectionReason } = req.body;
+        await this.partnerService.updateDocumentStatus(partnerId, documentType, status, rejectionReason);
+        sendSuccess(res, "Partner document status updated successfully");
+      }
+    );
+
+    // getPendingVerifications = asyncHandler(
+    //   async (req: Request, res: Response, next: NextFunction) => {
+    //     const verifications = await this.partnerService.getPendingVerifications();
+    //     sendSuccess(res, "Fetched pending verifications", { verifications });
+    //   }
+    // );
+
+    getPartnerDetails = asyncHandler(
+      async (req: Request, res: Response, next: NextFunction) => {
+        const partnerId = req.params.id;
+        const partner = await this.partnerService.getCurrentPartner(partnerId);
+        sendSuccess(res, "Fetched partner details", { partner });
+      }
+    );
+}

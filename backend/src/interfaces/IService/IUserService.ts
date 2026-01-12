@@ -5,6 +5,7 @@ import { IUser } from '../IModel/IUser';
 export interface IUserService {
   getUserProfile(userId: string): Promise<IUser>;
   updateProfile(userId: string, updateData: any): Promise<IUser>;
+  updateUserStatus(userId: string, updateData: { isActive?: boolean; isVerified?: boolean }): Promise<IUser>;
   getAllUsers(pagination: PaginationOptions, filters?: any): Promise<PaginatedResult<IUser>>;
   getUserById(userId: string): Promise<IUser>;
   deactivateUser(userId: string): Promise<IUser>;

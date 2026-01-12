@@ -99,9 +99,7 @@ export class UserController {
   // Address Management
   addAddress = asyncHandler(
     
-    async (req: Request, res: Response, next: NextFunction) => {
-      console.log("Adding address for user:", req.body);
-      
+    async (req: Request, res: Response, next: NextFunction) => {      
       const userId = req.user!.userId;
       const user = await this.userService.addAddress(userId, req.body);
 

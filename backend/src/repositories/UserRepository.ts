@@ -31,8 +31,9 @@ export class UserRepository extends BaseRepository<IUser> implements IUserReposi
   }
 
   async findByRole(role: UserRole, pagination: PaginationOptions): Promise<PaginatedResult<IUser>> {
-    return this.findWithPagination({ role, isActive: true }, pagination);
+    return this.findWithPagination({ role, }, pagination);
   }
+
 
   async findDeliveryPartners(
     isOnline?: boolean,

@@ -20,8 +20,6 @@ export class DatabaseConnection {
       logger.info('Database already connected');
       return;
     }
-
-    console.log('config.database.uri',config.database.uri);
     
     try {
       await mongoose.connect(config.database.uri, config.database.options);

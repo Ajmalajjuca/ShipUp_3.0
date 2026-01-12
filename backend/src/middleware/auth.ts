@@ -62,33 +62,3 @@ export const authorize = (roles: UserRole[]) => {
   };
 };
 
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next();
-    }
-
-    const token = authHeader.split(' ')[1];
-    
-    try {
-      const decoded = jwt.verify(token, config.jwtSecret) as JWTPayload;
-      
-      const user = await User.findById(decoded.userId);
-      if (user && user.isActive) {
-        req.user = {
-          userId: decoded.userId,
-          email: decoded.email,
-          role: decoded.role,
-        };
-      }
-    } catch (jwtError) {
-      // Token is invalid, but we don't throw error for optional auth
-    }
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};

@@ -35,6 +35,7 @@ export class AuthService implements IAuthService {
         userData.email,
         userData.phone
       );
+      
 
       if (existingUser) {
         if (existingUser.email === userData.email.toLowerCase()) {
@@ -105,6 +106,45 @@ export class AuthService implements IAuthService {
       return { user, accessToken, refreshToken };
     } catch (error) {
       logger.error('Login failed:', error);
+      throw error;
+    }
+  }
+
+  async adminLogin(email: string, password: string): Promise<{ user: IUser; accessToken: string; refreshToken: string }> {
+    try {
+      // Find user by email
+      const user = await this.userRepository.findByEmail(email);
+      if (!user) {
+        throw createError('Invalid credentials', 401);
+      }
+      // Check if user is active
+      if (!user.isActive) {
+        throw createError('Account is deactivated', 401);
+      }
+
+      // Check if user is admin
+      if (user.role !== UserRole.ADMIN) {
+        throw createError('Access denied', 403);
+      }
+
+      // Verify password
+      const isPasswordValid = await comparePassword(password, user.password);
+      if (!isPasswordValid) {
+        throw createError('Invalid credentials', 401);
+      }
+
+      // Update last login
+      await this.userRepository.updateLastLogin(user._id.toString());
+
+      // Generate JWT token
+      const accessToken = this.generateAccessToken(user);
+      const refreshToken = this.generateRefreshToken(user);
+
+      logger.info(`Admin user logged in successfully: ${user.email}`);
+
+      return { user, accessToken, refreshToken };
+    } catch (error) {
+      logger.error('Admin login failed:', error);
       throw error;
     }
   }

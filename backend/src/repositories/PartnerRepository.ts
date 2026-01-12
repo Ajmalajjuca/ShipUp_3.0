@@ -54,6 +54,15 @@ export class PartnerRepository extends BaseRepository<IPartner> implements IPart
     return this.find(filter);
   }
 
+  async findUnverifiedPartners(pagination: PaginationOptions): Promise<PaginatedResult<IPartner>> {
+    const filter: FilterQuery<IPartner> = {
+      status: { $ne: PartnerStatus.PENDING },
+      isActive: true
+    };
+
+    return this.findWithPagination(filter, pagination);
+  }
+
   async updateLastLogin(partnerId: string): Promise<IPartner | null> {
     return this.update(partnerId, { lastLoginAt: new Date() });
   }

@@ -37,6 +37,7 @@ import { OrderController } from '../controllers/OrderController';
 import { PartnerController } from '../controllers/PartnerController';
 import { IAddressRepository } from '../interfaces/IRepository/IAddressRepository';
 import { AddressRepository } from '../repositories/AddressRepository';
+import { AdminController } from '../controllers/Admincontroller';
 
 // Register repositories
 container.registerSingleton<IUserRepository>('UserRepository', UserRepository);
@@ -59,5 +60,6 @@ container.registerSingleton(AuthController);
 container.registerSingleton(LocationController);
 container.registerSingleton(OrderController);
 container.registerSingleton(PartnerController);
+container.registerSingleton(AdminController); 
 
 export { container };

@@ -26,6 +26,8 @@ router.post('/reset-password', authLimiter, validate(resetPasswordSchema), authC
 router.post('/refresh-token', authController.refreshToken);
 router.post('/validate-token', authController.validateToken);
 
+
+
 // Protected routes
 router.use(authenticate);
 router.get('/profile', authController.getProfile);

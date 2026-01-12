@@ -13,9 +13,7 @@ export class AuthController {
     @inject('AuthService') private authService: IAuthService
   ) {}
 
-  register = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    console.log('Request body:', req.body);
-    
+  register = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {    
     const { user, accessToken, refreshToken } = await this.authService.register(req.body);
 
     res.cookie('refreshToken', refreshToken, {
@@ -86,9 +84,7 @@ export class AuthController {
   });
 
   verifyOTP = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const { code, type } = req.body;
-    console.log('req.user>>', req.user);
-    
+    const { code, type } = req.body;    
     const userId = req.user!.userId;
     
     await this.authService.verifyOTP(userId, type as OTPType, code);
@@ -97,8 +93,11 @@ export class AuthController {
   });
 
   refreshToken = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+     console.log('Token Refreshing Called....');
+     
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
+      console.log('No refresh token found!');
       return sendError(res, 'Refresh token required', 400);
     }
     
@@ -108,9 +107,7 @@ export class AuthController {
   });
 
   logout = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.user!.userId;
-    console.log('logout userId>>', userId);
-    
+    const userId = req.user!.userId;    
     await this.authService.logout(userId);
     res.clearCookie('refreshToken', {
   httpOnly: true,

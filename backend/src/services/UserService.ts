@@ -97,6 +97,34 @@ export class UserService implements IUserService {
   }
 }
 
+async updateUserStatus(
+  userId: string,
+  updateData: {
+    isActive?: boolean;
+    isVerified?: boolean;
+    role?: UserRole;
+  }
+): Promise<IUser> {
+  try {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw createError('User not found', 404);
+    }
+
+    const updatedUser = await this.userRepository.update(userId, updateData);
+    if (!updatedUser) {
+      throw createError('Failed to update user status', 500);
+    }
+
+    logger.info(`User status updated for user: ${userId}`);
+    return updatedUser;
+  } catch (error) {
+    logger.error('Update user status failed:', error);
+    throw error;
+  }
+}
+
+
 
   async getAllUsers(
     pagination: PaginationOptions,
@@ -119,6 +147,8 @@ export class UserService implements IUserService {
       } else {
         result = await this.userRepository.findActiveUsers(pagination);
       }
+
+      
 
       // Apply additional filters if needed
       if (filters?.isActive !== undefined || filters?.isVerified !== undefined) {

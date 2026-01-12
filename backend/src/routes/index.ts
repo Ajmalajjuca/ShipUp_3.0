@@ -5,6 +5,7 @@ import PartnerRoutes from './partnerRoutes';
 import userRoutes from '../routes/userRoutes';
 import orderRoutes from '../routes/orderRoutes';
 import locationRoutes from './locationRoutes';
+import adminRoutes from './adminRoutes';
 import { sendSuccess } from '../utils/response';
 
 const router = Router();
@@ -35,6 +36,7 @@ router.use('/users', userRoutes);
 router.use('/orders', orderRoutes);
 router.use('/locations', locationRoutes);
 router.use('/partner', PartnerRoutes);
+router.use('/admin', adminRoutes); 
 
 // 404 handler for API routes
 router.use('*', (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import { UserRole, OTPType, JWTPayload, PartnerRegistrationData } from '../../types';
+import { UserRole, OTPType, JWTPayload, PartnerRegistrationData, PaginationOptions, PaginatedResult } from '../../types';
 import { IPartner } from '../IModel/IPartner';
 
 export interface IPartnerService {
@@ -9,7 +9,8 @@ export interface IPartnerService {
     getCurrentPartner(partnerId: string): Promise<IPartner>;
     refreshToken(refreshToken: string): Promise<{ accessToken: string }>;
     updateDocumentStatus(partnerId: string, documentType: 'aadhar' | 'pan' | 'license' | 'insurance' | 'pollution' | 'banking', status: 'approved' | 'rejected' | 'pending', rejectionReason?: string): Promise<void>;
-    getPendingVerifications(): Promise<any[]>;
+    getAllPartners(pagination:PaginationOptions,filter?:any): Promise<PaginatedResult<IPartner[]>>;
+    getAllPartnersRequest(pagination:PaginationOptions,filter?:any): Promise<PaginatedResult<IPartner[]>>;
     getDetailedVerificationStatus(partnerId: string): Promise<{
         isVerified: boolean;
         overallStatus: string;

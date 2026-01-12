@@ -21,6 +21,20 @@ class AuthService {
     return user;
   }
 
+  async adminLoginService(email: string, password: string): Promise<User> {
+    const response = await api.post<ApiResponse<{
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+    }>>('/admin/login', { email, password });
+    console.log('Admin login response:', response);
+    
+    const { user, accessToken, refreshToken } = response.data.data;
+    this.setRefreshToken(refreshToken);
+    this.setTokens(accessToken);
+    return user;
+  }
+
   async register(userData: RegisterCredentials): Promise<User> {
     const response = await api.post<ApiResponse<{
       user: User;
