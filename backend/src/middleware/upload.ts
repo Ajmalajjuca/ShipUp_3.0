@@ -143,7 +143,7 @@ export const userUpload = upload.fields([
 ]);
 
 // Single file upload (for other routes)
-export const singleUpload = upload.single('file');
+export const singleUpload = upload.single('image');
 
 // Multiple files upload (for other routes)
 export const multipleUpload = upload.array('files', 5);

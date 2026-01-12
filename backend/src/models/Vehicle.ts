@@ -1,5 +1,3 @@
-// src/models/vehicle.model.ts
-
 import { IVehicle } from '../interfaces/IModel/IVehicle';
 import mongoose, { Document, Schema } from 'mongoose';
 
@@ -41,4 +39,4 @@ const VehicleSchema = new Schema<VehicleDocument>(
   }
 );
 
-export const VehicleModel = mongoose.model<VehicleDocument>('Vehicle', VehicleSchema);
+export const Vehicle = mongoose.model<VehicleDocument>('Vehicle', VehicleSchema);

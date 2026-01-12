@@ -43,10 +43,10 @@ const PartnerList: React.FC<PartnerListProps> = ({ onViewPartner }) => {
   const fetchPartners = async () => {
     try {
       const response = await adminService.getAllPartners();
-      console.log('Fetched partners:', response.data.partners.data);
+      console.log('Fetched partners:', response.partners.data);
 
       // Filter only fully verified partners
-      const verifiedPartners = (response.data.partners.data || []).filter((partner: Partner) =>
+      const verifiedPartners = (response.partners.data || []).filter((partner: Partner) =>
         partner.bankDetailsCompleted === true &&
         partner.personalDocumentsCompleted === true &&
         partner.vehicleDetailsCompleted === true

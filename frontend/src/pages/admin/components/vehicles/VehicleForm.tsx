@@ -18,15 +18,16 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const initialFormData: CreateVehicleInput = {
+  const [formData, setFormData] = useState<CreateVehicleInput>({
     name: "",
     description: "",
     maxWeight: 0,
     pricePerKm: 0,
-    imageUrl: "",
-  };
+    imageUrl: "", // ← we won't use this for sending anymore
+  });
 
-  const [formData, setFormData] = useState<CreateVehicleInput>(initialFormData);
+  const [file, setFile] = useState<File | null>(null);           // ← new!
+  const [preview, setPreview] = useState<string | null>(null);   // nice to have
   const [isActive, setIsActive] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,10 +37,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
       setFormData({
         name: vehicle.name,
         description: vehicle.description,
-        maxWeight: vehicle.maxWeight,
-        pricePerKm: vehicle.pricePerKm,
-        imageUrl: vehicle.imageUrl || "",
+        maxWeight: vehicle.maxWeight ?? 0,
+        pricePerKm: vehicle.pricePerKm ?? 0,
+        imageUrl: "", // we don't send this anymore
       });
+      setPreview(vehicle.imageUrl || null);
       setIsActive(vehicle.isActive ?? true);
     }
   }, [vehicle]);
@@ -48,86 +50,45 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "maxWeight" || name === "pricePerKm" ? parseFloat(value) || 0 : value,
+    }));
 
-    // Handle numeric values
-    if (name === "maxWeight" || name === "pricePerKm") {
-      setFormData({
-        ...formData,
-        [name]: parseFloat(value) || 0,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
-
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      });
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
 
-    // Create a FormData object to send to the server
-    const formData = new FormData();
-    formData.append("image", file);
+    // Optional: size/type validation
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      toast.error("File size should be less than 10MB");
+      return;
+    }
 
-    // Show some loading indicator if desired
-    setIsSubmitting(true);
+    setFile(selectedFile);
 
-    // Upload the image to the server
-    vehicleService
-      .uploadVehicleImage(formData)
-      .then((response) => {
-        if (response.success && response.imageUrl) {
-          // Update the form with the S3 URL
-          setFormData((prev) => ({
-            ...prev,
-            imageUrl: response.imageUrl,
-          }));
-        } else {
-          toast.error("Failed to upload image");
-        }
-      })
-      .catch((error) => {
-        console.error("Error uploading image:", error);
-        toast.error("Error uploading image");
-      })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
+    // Show preview
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPreview(objectUrl);
+
+    // Cleanup
+    return () => URL.revokeObjectURL(objectUrl);
   };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Vehicle name is required";
-    }
+    if (!formData.name.trim()) newErrors.name = "Vehicle name is required";
+    if (!formData.description?.trim()) newErrors.description = "Description is required";
 
-    if (!formData.description?.trim()) {
-      newErrors.description = "Description is required";
-    }
+    if (formData.maxWeight <= 0) newErrors.maxWeight = "Max weight must be > 0";
+    if (formData.pricePerKm <= 0) newErrors.pricePerKm = "Price per km must be > 0";
 
-    const maxWeightValue =
-      typeof formData.maxWeight === "string"
-        ? parseFloat(formData.maxWeight)
-        : formData.maxWeight;
-
-    if (!maxWeightValue || maxWeightValue <= 0) {
-      newErrors.maxWeight = "Max weight must be greater than 0";
-    }
-
-    if (!formData.pricePerKm || formData.pricePerKm <= 0) {
-      newErrors.pricePerKm = "Price per km must be greater than 0";
-    }
+    // Optional: you can make image required for new vehicles
+    // if (!vehicle && !file) newErrors.image = "Image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -135,41 +96,48 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
+    if (!validate()) return;
 
     setIsSubmitting(true);
 
     try {
+      const payload = new FormData();
+
+      // Text fields
+      payload.append("name", formData.name);
+      payload.append("description", formData.description || "");
+      payload.append("maxWeight", String(formData.maxWeight));
+      payload.append("pricePerKm", String(formData.pricePerKm));
+
+      if (vehicle) {
+        payload.append("isActive", String(isActive));
+      }
+
+      // File (only if user selected new one)
+      if (file) {
+        payload.append("image", file); // ← backend should expect field name "image"
+      }
+
       let response;
 
       if (vehicle) {
-        // Update existing vehicle
-        response = await vehicleService.updateVehicle(vehicle.id, {
-          ...formData,
-          isActive,
-        });
+        // UPDATE - you might need to send vehicle id in url or as _id field
+        response = await vehicleService.updateVehicle(vehicle._id, payload);
       } else {
-        // Create new vehicle
-        response = await vehicleService.createVehicle(formData);
-        console.log("Vehicle created:", response);
+        // CREATE
+        response = await vehicleService.createVehicle(payload);
       }
 
       if (response.success) {
-        toast.success(
-          vehicle
-            ? "Vehicle updated successfully"
-            : "Vehicle created successfully"
-        );
+        toast.success(vehicle ? "Vehicle updated!" : "Vehicle created!");
         onSubmit();
+        onClose(); // optional
       } else {
         toast.error(response.message || "Operation failed");
       }
-    } catch (error) {
-      console.error("Error saving vehicle:", error);
-      toast.error("An error occurred while saving the vehicle");
+    } catch (err) {
+      console.error("Save vehicle error:", err);
+      toast.error("Something went wrong while saving vehicle");
     } finally {
       setIsSubmitting(false);
     }
@@ -220,38 +188,32 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="imageUrl"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Vehicle Image
+            <label className="block text-sm font-medium text-gray-700">
+              Vehicle Image {vehicle ? "(optional - keep current)" : ""}
             </label>
+
             <div className="flex items-center space-x-4">
-              <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center relative overflow-hidden">
-                {formData.imageUrl ? (
-                  <img
-                    src={formData.imageUrl}
-                    alt="Vehicle"
-                    className="h-full w-full object-contain"
-                  />
+              <div className="h-20 w-20 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden border">
+                {preview ? (
+                  <img src={preview} alt="Preview" className="h-full w-full object-cover" />
                 ) : (
-                  <Truck size={24} className="text-gray-400" />
+                  <Truck size={32} className="text-gray-400" />
                 )}
               </div>
+
               <div className="flex-1">
-                <label className="inline-flex items-center cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 transition-colors">
+                <label className="cursor-pointer inline-flex items-center bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
                   <Upload size={16} className="mr-2" />
-                  <span>Upload Image</span>
+                  {file ? "Change Image" : "Select Image"}
                   <input
                     type="file"
-                    id="imageUpload"
                     accept="image/*"
-                    onChange={handleFileUpload}
-                    className="sr-only"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
                 </label>
                 <p className="text-xs text-gray-500 mt-1">
-                  PNG, JPG, GIF up to 10MB
+                  PNG, JPG, max 10MB
                 </p>
               </div>
             </div>

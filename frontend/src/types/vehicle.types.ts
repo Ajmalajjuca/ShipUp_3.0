@@ -1,5 +1,5 @@
 export interface VehicleType {
-  id: string;
+  _id: string;
   name: string;
   description?: string;
   imageUrl?: string;
@@ -16,8 +16,8 @@ export interface CreateVehicleInput {
   description?: string;
   imageUrl?: string;
   isAvailable?: boolean;
-  maxWeight?: string | number;
-  pricePerKm?: number;
+  maxWeight: number;
+  pricePerKm: number;
   isActive?: boolean;
 }
 
@@ -26,8 +26,8 @@ export interface UpdateVehicleInput {
   description?: string;
   imageUrl?: string;
   isAvailable?: boolean;
-  maxWeight?: string | number;
-  pricePerKm?: number;
+  maxWeight:  number;
+  pricePerKm: number;
   isActive?: boolean;
 }
 

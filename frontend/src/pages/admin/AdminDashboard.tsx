@@ -167,9 +167,6 @@ const AdminDashboard: React.FC = () => {
     string | null
   >(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null
-  );
   const [selectedOrderId,setSelectedOrderId]= useState<string|null>(null)
   const navigate = useNavigate();
 
@@ -318,7 +315,7 @@ const AdminDashboard: React.FC = () => {
           <PartnerRequest onViewPartner={(id) => setSelectedPartnerId(id)} />
         );
       case "Vehicle List":
-        return <VehicleList onViewVehicle={(id) => setSelectedVehicleId(id)} />;
+        return <VehicleList  />;
     //   case "All Orders":
     //     return <AllOrders onViewOrder={(id) => setSelectedOrderId(id)} />;
     //   case "Pending Orders":

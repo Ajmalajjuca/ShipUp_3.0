@@ -37,7 +37,12 @@ import { OrderController } from '../controllers/OrderController';
 import { PartnerController } from '../controllers/PartnerController';
 import { IAddressRepository } from '../interfaces/IRepository/IAddressRepository';
 import { AddressRepository } from '../repositories/AddressRepository';
-import { AdminController } from '../controllers/Admincontroller';
+import { AdminController } from '../controllers/AdminController';
+import { IVehicleRepository } from '../interfaces/IRepository/IVehicleRepository';
+import { VehicleRepository } from '../repositories/VehicleRepository';
+import { IVehicleService } from '../interfaces/IService/IVehicleService';
+import { VehicleService } from '../services/VehicleService';
+import { VehiclesController } from '../controllers/VehicleController';
 
 // Register repositories
 container.registerSingleton<IUserRepository>('UserRepository', UserRepository);
@@ -46,6 +51,7 @@ container.registerSingleton<ILocationRepository>('LocationRepository', LocationR
 container.registerSingleton<IOrderRepository>('OrderRepository', OrderRepository);
 container.registerSingleton<IPartnerRepository>('PartnerRepository', PartnerRepository);
 container.registerSingleton<IAddressRepository>('addressRepository', AddressRepository); // Register AddressRepository
+container.registerSingleton<IVehicleRepository>('VehicleRepository', VehicleRepository);
 
 // Register services
 container.registerSingleton<IUserService>('UserService', UserService);
@@ -54,6 +60,7 @@ container.registerSingleton<ILocationService>('LocationService', LocationService
 container.registerSingleton<IOrderService>('OrderService', OrderService);
 container.registerSingleton<IPartnerService>('PartnerService', PartnerService);
 container.registerSingleton<IEmailService>('EmailService', EmailService); // Assuming EmailService is also registered
+container.registerSingleton<IVehicleService>('VehicleService', VehicleService);
 // Register controllers
 container.registerSingleton(UserController);
 container.registerSingleton(AuthController);
@@ -61,5 +68,6 @@ container.registerSingleton(LocationController);
 container.registerSingleton(OrderController);
 container.registerSingleton(PartnerController);
 container.registerSingleton(AdminController); 
+container.registerSingleton(VehiclesController);
 
 export { container };

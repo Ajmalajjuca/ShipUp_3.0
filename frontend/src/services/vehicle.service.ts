@@ -15,7 +15,7 @@ interface ImageUploadResponse {
 export const vehicleService = {
   getVehicleById: async (id: string): Promise<VehicleResponse> => {
     try {
-      const response = await api.get(`/api/vehicles/${id}`);
+      const response = await api.get(`/admin/vehicles/${id}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching vehicle:", error);
@@ -30,7 +30,7 @@ export const vehicleService = {
     formData: FormData
   ): Promise<ImageUploadResponse> => {
     try {
-      const response = await api.post("/api/vehicles/upload", formData, {
+      const response = await api.post("/admin/vehicles/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -47,7 +47,7 @@ export const vehicleService = {
 
   getVehicles: async (): Promise<VehiclesResponse> => {
     try {
-      const response = await api.get("/api/vehicles");
+      const response = await api.get("/admin/vehicles");
       return response.data;
     } catch (error) {
       console.error("Error fetching vehicles:", error);
@@ -60,9 +60,14 @@ export const vehicleService = {
     }
   },
 
-  createVehicle: async (data: CreateVehicleInput): Promise<VehicleResponse> => {
+  createVehicle: async (data: FormData): Promise<VehicleResponse> => {
     try {
-      const response = await api.post("/api/vehicles", data);
+      const response = await api.post("/admin/vehicles", data,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+        }}
+      );
       return response.data;
     } catch (error) {
       console.error("Error creating vehicle:", error);
@@ -75,10 +80,10 @@ export const vehicleService = {
 
   updateVehicle: async (
     id: string,
-    data: UpdateVehicleInput
+    data: FormData
   ): Promise<VehicleResponse> => {
     try {
-      const response = await api.put(`/api/vehicles/${id}`, data);
+      const response = await api.put(`/admin/vehicles/${id}`, data);
       return response.data;
     } catch (error) {
       console.error("Error updating vehicle:", error);
@@ -91,7 +96,7 @@ export const vehicleService = {
 
   deleteVehicle: async (id: string): Promise<VehicleResponse> => {
     try {
-      const response = await api.delete(`/api/vehicles/${id}`);
+      const response = await api.delete(`/admin/vehicles/${id}`);
       return response.data;
     } catch (error) {
       console.error("Error deleting vehicle:", error);
@@ -104,7 +109,7 @@ export const vehicleService = {
 
   toggleVehicleStatus: async (id: string): Promise<VehicleResponse> => {
     try {
-      const response = await api.patch(`/api/vehicles/${id}/toggle-status`);
+      const response = await api.patch(`/admin/vehicles/${id}/toggle-status`);
       return response.data;
     } catch (error) {
       console.error("Error toggling vehicle status:", error);

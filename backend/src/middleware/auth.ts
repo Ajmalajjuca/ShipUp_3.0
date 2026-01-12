@@ -7,7 +7,7 @@ import { sendError } from '../utils/response';
 import config from '../config';
 
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-  console.log('Authenticating');
+  console.log('Authenticating...');
 
   try {
     const authHeader = req.headers.authorization;
@@ -49,6 +49,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 };
 
 export const authorize = (roles: UserRole[]) => {
+  
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return sendError(res, 'Authentication required', 401);
