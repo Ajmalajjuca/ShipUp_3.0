@@ -1,18 +1,29 @@
 import morgan from 'morgan';
+import chalk from 'chalk';
 import { logger } from '../utils/logger';
 
-// Custom token for user ID
+// Add user info to logs
 morgan.token('user', (req: any) => {
-  return req.user ? req.user.userId : 'anonymous';
+  return req.user?.userId || 'guest';
 });
 
-// Custom format
-const logFormat = ':remote-addr - :user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" :response-time ms';
+morgan.token('status-colored', (req: any, res: any) => {
+  const status = res.statusCode;
+  
+  if (status >= 500) return chalk.red(status);      // Red for 5xx
+  if (status >= 400) return chalk.yellow(status);   // Yellow for 4xx
+  if (status >= 300) return chalk.cyan(status);     // Cyan for 3xx
+  if (status >= 200) return chalk.green(status);    // Green for 2xx
+  return chalk.white(status);                       // White for others
+});
 
-export const httpLogger = morgan(logFormat, {
+const format = ':method :url :status-colored :response-time ms - User: :user';
+export const httpLogger = morgan(format, {
   stream: {
     write: (message: string) => {
       logger.info(message.trim());
     },
   },
 });
+
+export default httpLogger;
