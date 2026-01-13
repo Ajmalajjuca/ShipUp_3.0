@@ -1,5 +1,5 @@
 import React from 'react';
-import { Order } from './BaseOrderList';
+import type { Order } from './BaseOrderList';
 
 interface OrderTableProps {
   orders: Order[];

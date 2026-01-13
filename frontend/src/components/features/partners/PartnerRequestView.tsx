@@ -11,9 +11,12 @@ import {
   Clock
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import type { PartnerUser } from '../../..//types';
-import { adminService } from '../../..//services/admin';
-
+import type { PartnerUser } from '../../../types';
+import { adminService } from '../../../services/admin';
+import Card from '../../../components/common/Card/Card';
+import Button from '../../../components/common/Button/Button';
+import Badge from '../../../components/common/Badge/Badge';
+import Loader from '../../../components/common/Loader/Loader';
 
 interface VerificationField {
   key: keyof Pick<PartnerUser, 'bankDetailsCompleted' | 'personalDocumentsCompleted' | 'vehicleDetailsCompleted'>;
@@ -42,16 +45,15 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
 
       let vehicleDetails = null;
 
-
       if (vehicleId) {
         try {
-          const vehicleRes =  {};
+          const vehicleRes =  {}; // Placeholder for vehicle details fetch if needed
           console.log('Fetched vehicle details:', vehicleRes);
           vehicleDetails = vehicleRes || null;
         }
         catch (error) {
+            // Silently fail for vehicle details if not critical, or log
           console.error('Error fetching vehicle details:', error);
-          toast.error('Failed to fetch vehicle details');
         }
       };
       setPartner(partnerRes.partner ? { ...partnerRes?.partner, vehicleDetails } : null);
@@ -62,8 +64,6 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
       setLoading(false);
     }
   };
-
-
 
   const handleBack = () => {
     onBack();
@@ -77,7 +77,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
 
   const handleVerification = async (field: string) => {
     try {
-      const response = await driverService.verifyDocument(partnerId, field);
+      const response = await adminService.verifyDocument(partnerId, field);
 
       if (response.success) {
         setPartner(prev => prev ? { ...prev, [field]: true } : null);
@@ -96,23 +96,36 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
     { id: 'documents', label: 'Documents', icon: <FileText size={18} /> },
   ];
 
-  if (loading) return <div className="text-center py-4">Loading...</div>;
-  if (!partner) return <div className="text-center text-red-500 py-4">Partner not found</div>;
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loader size="lg" text="Loading request details..." /></div>;
+  
+  if (!partner) {
+      return (
+        <div className="flex justify-center items-center min-h-screen p-4">
+            <Card className="text-center p-8 max-w-md">
+                <div className="flex flex-col items-center">
+                    <XCircle className="w-16 h-16 text-red-500 mb-4" />
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Partner Request Not Found</h2>
+                    <Button onClick={onBack} variant="primary">Go Back</Button>
+                </div>
+            </Card>
+        </div>
+      );
+  }
 
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm">
+    <div className="bg-gray-50 min-h-screen pb-12">
       {/* Header with Status */}
-      <div className="border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
-              <button
+              <Button
+                variant="ghost"
                 onClick={handleBack}
-                className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label="Go back"
+                className="mr-4 rounded-full"
+                leftIcon={<ArrowLeft size={24} />}
               >
-                <ArrowLeft size={24} />
-              </button>
+              </Button>
               <div>
                 <h2 className="text-xl font-semibold text-gray-800">Partner Request Details</h2>
                 <p className="text-sm text-gray-500 mt-1">Request ID: {partner.partnerId}</p>
@@ -131,17 +144,17 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
 
           {/* Profile Summary */}
           <div className="flex items-center mt-6">
-            {partner.profilePicture ? (
-              <img
-                src={`${partner.profilePicture}`}
-                alt={partner.fullName}
-                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-              />
-            ) : (
-              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
+             <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
+                {partner.profilePicture ? (
+                <img
+                    src={`${partner.profilePicture}`}
+                    alt={partner.fullName}
+                    className="w-full h-full object-cover"
+                />
+                ) : (
                 <User size={32} className="text-gray-400" />
-              </div>
-            )}
+                )}
+             </div>
             <div className="ml-6">
               <h3 className="text-2xl font-bold text-gray-800">{partner.fullName}</h3>
               <div className="flex items-center mt-2 text-gray-600">
@@ -173,7 +186,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-6 max-w-7xl mx-auto">
         {activeTab === 'personal' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <InfoCard
@@ -183,7 +196,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
                 { label: "Full Name", value: partner.fullName },
                 { label: "Email", value: partner.email },
                 { label: "Mobile", value: partner.phone },
-                { label: "Date of Birth", value: partner.dateOfBirth },
+                { label: "Date of Birth", value: partner.dateOfBirth || 'N/A' },
               ]}
             />
           </div>
@@ -195,9 +208,9 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
               title="Vehicle Details"
               icon={<Truck className="text-blue-500" />}
               items={[
-                { label: "Vehicle Type", value: partner.vehicalDocuments.vehicleType
+                { label: "Vehicle Type", value: partner.vehicalDocuments?.vehicleType || 'N/A'
                 },
-                { label: "Registration Number", value: partner.vehicalDocuments.registrationNumber }
+                { label: "Registration Number", value: partner.vehicalDocuments?.registrationNumber || 'N/A' }
               ]}
             />
             <DocumentsCard
@@ -205,23 +218,23 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
               documents={[
                 {
                   label: "License",
-                  path: partner.personalDocuments.licenseFront,
+                  path: partner.personalDocuments?.licenseFront,
                   docType: "license",
-                  isComplete: Boolean(partner.personalDocuments.licenseFront,),
+                  isComplete: Boolean(partner.personalDocuments?.licenseFront),
                   verificationField: "vehicleDetailsCompleted"
                 },
                 {
                   label: "Insurance",
-                  path: partner.vehicalDocuments.insuranceDocument,
+                  path: partner.vehicalDocuments?.insuranceDocument,
                   docType: "insurance",
-                  isComplete: Boolean(partner.vehicalDocuments.insuranceDocument),
+                  isComplete: Boolean(partner.vehicalDocuments?.insuranceDocument),
                   verificationField: "vehicleDetailsCompleted"
                 },
                 {
                   label: "Pollution Certificate",
-                  path: partner.vehicalDocuments.pollutionDocument,
+                  path: partner.vehicalDocuments?.pollutionDocument,
                   docType: "pollution",
-                  isComplete: Boolean(partner.vehicalDocuments.pollutionDocument),
+                  isComplete: Boolean(partner.vehicalDocuments?.pollutionDocument),
                   verificationField: "vehicleDetailsCompleted"
                 }
               ]}
@@ -237,15 +250,11 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
               title="Bank Account Details"
               icon={<Building2 className="text-purple-500" />}
               items={[
-                { label: "Account Holder", value: partner.bankingDetails.accountHolderName },
-                { label: "Account Number", value: partner.bankingDetails.accountNumber },
-                { label: "IFSC Code", value: partner.bankingDetails.ifscCode },
-                { label: "UPI ID", value: partner.bankingDetails.upiId }
+                { label: "Account Holder", value: partner.bankingDetails?.accountHolderName || 'N/A' },
+                { label: "Account Number", value: partner.bankingDetails?.accountNumber || 'N/A' },
+                { label: "IFSC Code", value: partner.bankingDetails?.ifscCode || 'N/A' },
+                { label: "UPI ID", value: partner.bankingDetails?.upiId || 'N/A' }
               ]}
-              // verificationStatus={{
-              //   isVerified: partner.bankDetailsCompleted,
-              //   onVerify: () => handleVerification('bankDetailsCompleted')
-              // }}
             />
           </div>
         )}
@@ -257,16 +266,16 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
               documents={[
                 {
                   label: "Aadhar Card",
-                  path: partner.personalDocuments.aadharFront,
+                  path: partner.personalDocuments?.aadharFront,
                   docType: "aadhar",
-                  isComplete: Boolean(partner.personalDocuments.aadharFront),
+                  isComplete: Boolean(partner.personalDocuments?.aadharFront),
                   verificationField: "personalDocumentsCompleted"
                 },
                 {
                   label: "PAN Card",
-                  path: partner.personalDocuments.panFront,
+                  path: partner.personalDocuments?.panFront,
                   docType: "pan",
-                  isComplete: Boolean(partner.personalDocuments.panFront),
+                  isComplete: Boolean(partner.personalDocuments?.panFront),
                   verificationField: "personalDocumentsCompleted"
                 }
               ]}
@@ -277,8 +286,10 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
         )}
 
         {/* Add Verification Status section */}
-        <div className="mt-8 bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4">Verification Status</h3>
+        <Card className="mt-8">
+          <div className="mb-4">
+             <h3 className="text-lg font-semibold">Verification Status</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {verificationFields.map((field) => (
               <VerificationCard
@@ -289,7 +300,7 @@ const PartnerRequestView: React.FC<PartnerRequestViewProps> = ({ partnerId, onBa
               />
             ))}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
@@ -305,7 +316,7 @@ const InfoCard: React.FC<{
     onVerify: () => void;
   };
 }> = ({ title, icon, items, verificationStatus }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+  <Card className="h-full" padding="lg">
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center">
         {icon}
@@ -314,17 +325,14 @@ const InfoCard: React.FC<{
       {verificationStatus && (
         <div className="flex items-center">
           {verificationStatus.isVerified ? (
-            <span className="flex items-center text-green-600 text-sm">
-              <CheckCircle size={16} className="mr-1" />
-              Verified
-            </span>
+            <Badge variant="success" dot>
+                <span className="flex items-center gap-1">
+                    <CheckCircle size={14} />
+                    Verified
+                </span>
+            </Badge>
           ) : (
-            <button
-              onClick={verificationStatus.onVerify}
-              className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
-            >
-              Verify
-            </button>
+            <Button size="sm" onClick={verificationStatus.onVerify}>Verify</Button>
           )}
         </div>
       )}
@@ -337,7 +345,7 @@ const InfoCard: React.FC<{
         </div>
       ))}
     </div>
-  </div>
+  </Card>
 );
 
 const DocumentsCard: React.FC<{
@@ -352,11 +360,11 @@ const DocumentsCard: React.FC<{
   partner: PartnerUser;
   onVerify: () => void;
 }> = ({ title, documents, partner, onVerify }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+  <Card className="h-full" padding="lg">
     <h3 className="text-lg font-semibold mb-4 text-gray-800">{title}</h3>
     <div className="space-y-4">
       {documents.map((doc, index) => (
-        <div key={index} className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm">
+        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-100">
           <div className="flex items-center">
             {doc.isComplete ? (
               <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
@@ -368,26 +376,28 @@ const DocumentsCard: React.FC<{
           <div className="flex items-center space-x-2">
 
             {doc.path && (
-              <button
-                className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm hover:bg-blue-100 transition-colors"
+               <Button 
+                variant="ghost" 
+                size="sm" 
                 onClick={() => window.open(`${doc.path}`, '_blank')}
-              >
-                View
-              </button>
+               >
+                   View
+               </Button>
             )}
             {doc.verificationField && !partner[doc.verificationField as keyof PartnerUser] && (
-              <button
-                className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-sm hover:bg-green-100 transition-colors"
+               <Button 
+                variant="success" 
+                size="sm" 
                 onClick={onVerify}
-              >
-                Verify
-              </button>
+               >
+                   Verify
+               </Button>
             )}
           </div>
         </div>
       ))}
     </div>
-  </div>
+  </Card>
 );
 
 const VerificationBadge: React.FC<{ partner: PartnerUser }> = ({ partner }) => {
@@ -396,19 +406,15 @@ const VerificationBadge: React.FC<{ partner: PartnerUser }> = ({ partner }) => {
     partner.vehicleDetailsCompleted;
 
   return (
-    <div className={`flex items-center px-4 py-2 rounded-full ${isFullyVerified
-        ? 'bg-green-50 text-green-700'
-        : 'bg-yellow-50 text-yellow-700'
-      }`}>
-      {isFullyVerified ? (
-        <Shield className="w-4 h-4 mr-2" />
-      ) : (
-        <Clock className="w-4 h-4 mr-2" />
-      )}
-      <span className="text-sm font-medium">
-        {isFullyVerified ? 'Verified Partner' : 'Verification Pending'}
-      </span>
-    </div>
+    <Badge 
+        variant={isFullyVerified ? 'success' : 'warning'}
+        dot
+    >
+        <span className="flex items-center gap-1">
+            {isFullyVerified ? <Shield className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+            {isFullyVerified ? 'Verified Partner' : 'Verification Pending'}
+        </span>
+    </Badge>
   );
 };
 
@@ -417,7 +423,7 @@ const VerificationCard: React.FC<{
   isVerified: boolean;
   onVerify: () => void;
 }> = ({ label, isVerified, onVerify }) => (
-  <div className="bg-white p-4 rounded-lg border border-gray-200 flex items-center justify-between">
+  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center justify-between">
     <div className="flex items-center">
       {isVerified ? (
         <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
@@ -427,12 +433,7 @@ const VerificationCard: React.FC<{
       <span className="text-gray-700">{label}</span>
     </div>
     {!isVerified && (
-      <button
-        onClick={onVerify}
-        className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-sm hover:bg-green-100 transition-colors"
-      >
-        Verify
-      </button>
+       <Button variant="success" size="sm" onClick={onVerify}>Verify</Button>
     )}
   </div>
 );

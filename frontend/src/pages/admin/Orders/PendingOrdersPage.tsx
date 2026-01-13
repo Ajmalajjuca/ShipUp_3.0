@@ -1,14 +1,12 @@
 import React from 'react';
-import { Card } from '../../../components/common';
+import PendingOrders from '../../../components/features/orders/PendingOrders';
 
 const PendingOrdersPage: React.FC = () => {
-  return (
-    <Card className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">Pending Orders</h2>
-      <p className="text-gray-600">Pending orders will be displayed here</p>
-      {/* TODO: Implement PendingOrders component when uncommented */}
-    </Card>
-  );
+  const handleViewOrder = (id: string) => {
+    console.log('View pending order', id);
+  };
+
+  return <PendingOrders onViewOrder={handleViewOrder} />;
 };
 
 export default PendingOrdersPage;

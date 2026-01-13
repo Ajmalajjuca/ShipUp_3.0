@@ -100,6 +100,15 @@ class AdminService {
         return response.data;
     }
 
+    async verifyDocument(partnerId: string, field: string): Promise<any> {
+        const response = await api.put(`/admin/partners/${partnerId}/verify/${field}`);
+        return response.data;
+    }
+
+    async getPartnerOrders(partnerId: string): Promise<any> {
+        const response = await api.get(`/admin/partners/${partnerId}/orders`);
+        return response.data;
+    }
 }
 
 export const adminService = new AdminService();

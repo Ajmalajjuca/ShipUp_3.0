@@ -1,14 +1,17 @@
 import React from 'react';
-import { Card } from '../../../components/common';
+import AllOrders from '../../../components/features/orders/AllOrders';
 
 const OrdersPage: React.FC = () => {
-  return (
-    <Card className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">All Orders</h2>
-      <p className="text-gray-600">Order list will be displayed here</p>
-      {/* TODO: Implement AllOrders component when uncommented */}
-    </Card>
-  );
+  const handleViewOrder = (id: string) => {
+    // Navigate to order details if such a page exists, otherwise just log or toast
+    // For now, no specific route was set up for order details in route config?
+    // Ah, task.md says "Orders routes (All Orders, Pending, Completed)" only.
+    // implementation_plan.md says: Route path="orders" element={<OrdersPage />}
+    // It doesn't list order detail page.
+    console.log('View order', id);
+  };
+
+  return <AllOrders onViewOrder={handleViewOrder} />;
 };
 
 export default OrdersPage;

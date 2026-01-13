@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Eye, Trash2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { adminService } from '../../..//services/admin';
 import type { PartnerUser } from '../../..//types';
-
-
+import Card from '../../../components/common/Card/Card';
+import Input from '../../../components/common/Input/Input';
+import Button from '../../../components/common/Button/Button';
+import Badge from '../../../components/common/Badge/Badge';
+import Loader from '../../../components/common/Loader/Loader';
 
 interface PartnerRequestProps {
   onViewPartner: (partnerId: string) => void;
@@ -25,9 +28,7 @@ const PartnerRequest: React.FC<PartnerRequestProps> = ({ onViewPartner }) => {
       const response = await adminService.getAllPartnersRequest()
       console.log('Fetched partner requests:', response);
       
-      
-      // Filter partners that are not fully verified
-      const pendingPartners = (response?.partners?.data || []).filter((partner: PartnerRequest) => 
+      const pendingPartners = (response?.partners?.data || []).filter((partner: any) => 
         !partner.bankDetailsCompleted || 
         !partner.personalDocumentsCompleted || 
         !partner.vehicleDetailsCompleted
@@ -42,29 +43,21 @@ const PartnerRequest: React.FC<PartnerRequestProps> = ({ onViewPartner }) => {
     }
   };
 
-  // const handleDelete = async (partnerId: string) => {
-  //   const confirmed = await confirmDialog(
-  //     'Are you sure you want to delete this partner request? This action cannot be undone.',
-  //     {
-  //       title: 'Delete Partner Request',
-  //       confirmText: 'Delete',
-  //       type: 'delete'
-  //     }
-  //   );
-  //   if (!confirmed) return;
-    
-  //   try {
-  //     await driverService.deleteDriver(partnerId);
-  //     setRequests(requests.filter(request => request.partnerId !== partnerId));
-  //     toast.success('Partner request deleted successfully');
-  //   } catch (error) {
-  //     console.error('Error deleting partner:', error);
-  //     toast.error('Failed to delete partner request');
-  //   }
-  // };
-
   const handleView = (partnerId: string) => {
     onViewPartner(partnerId);
+  };
+
+  const handleDelete = async (partnerId: string) => {
+      if (!window.confirm('Are you sure you want to delete this partner request?')) return;
+      
+      try {
+          await adminService.deletePartner(partnerId);
+          toast.success('Request deleted successfully');
+          fetchRequests();
+      } catch (error) {
+          console.error('Error deleting request:', error);
+          toast.error('Failed to delete request');
+      }
   };
 
   const filteredRequests = requests.filter(request => 
@@ -73,119 +66,122 @@ const PartnerRequest: React.FC<PartnerRequestProps> = ({ onViewPartner }) => {
     request.phone?.includes(searchTerm)
   );
   
-
-  if (loading) return <div className="text-center py-4">Loading...</div>;
-  if (error) return <div className="text-center text-red-500 py-4">{error}</div>;
+  if (loading) return <div className="flex justify-center py-8"><Loader size="lg" /></div>;
+  if (error) return (
+      <Card className="p-6 text-center text-red-500">
+          <p>{error}</p>
+          <Button variant="secondary" onClick={fetchRequests} className="mt-4">Retry</Button>
+      </Card>
+  );
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-700 mb-3 md:mb-0">
-          New Joining Request <span className="text-gray-500 font-normal">({requests.length})</span>
-        </h2>
-        <div className="relative mb-4">
-          <input
-            type="text"
-            placeholder="Search by Name or Phone"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-            aria-label="Search partners"
-          />
-          <Search size={18} className="absolute top-2.5 left-3 text-gray-400" />
+    <Card className="min-h-screen" padding="none">
+       <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                 <h2 className="text-xl font-bold text-gray-800">New Joining Requests</h2>
+                 <p className="text-gray-500 text-sm mt-1">Review and approve new driver partner applications ({requests.length})</p>
+            </div>
+            <div className="w-full md:w-64">
+                <Input
+                    placeholder="Search requests..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    leftIcon={<Search size={18} />}
+                    fullWidth
+                />
+            </div>
         </div>
-      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white">
           <thead>
-            <tr className="bg-gray-100 text-gray-600 uppercase text-xs font-semibold">
-              <th className="py-3 px-4 text-left">Sl.No</th>
-              <th className="py-3 px-4 text-left">Name</th>
-              <th className="py-3 px-4 text-left">Contact Info</th>
-              <th className="py-3 px-4 text-left">Request Date</th>
-              <th className="py-3 px-4 text-left">Bank Details</th>
-              <th className="py-3 px-4 text-left">Documents</th>
-              <th className="py-3 px-4 text-left">Vehicle Details</th>
-              <th className="py-3 px-4 text-left">Action</th>
+            <tr className="bg-gray-50 text-gray-600 uppercase text-xs font-semibold">
+              <th className="py-4 px-6 text-left">Applicant</th>
+              <th className="py-4 px-6 text-left">Contact Info</th>
+              <th className="py-4 px-6 text-left">Date</th>
+              <th className="py-4 px-6 text-left">Bank Status</th>
+              <th className="py-4 px-6 text-left">Docs Status</th>
+              <th className="py-4 px-6 text-left">Vehicle Status</th>
+              <th className="py-4 px-6 text-left">Action</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredRequests.map((request, index) => (
-              <tr key={request._id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4">{index + 1}</td>
-                <td className="py-3 px-4">
+          <tbody className="divide-y divide-gray-100">
+            {filteredRequests.map((request) => (
+              <tr key={request._id} className="hover:bg-gray-50 transition-colors">
+                <td className="py-4 px-6">
                   <div className="flex items-center">
-                    {request.profilePicture && (
+                    {request.profilePicture ? (
                       <img 
                         src={request.profilePicture} 
                         alt={request.fullName} 
-                        className="w-8 h-8 rounded-full mr-2"
+                        className="w-10 h-10 rounded-full mr-3 object-cover shadow-sm"
                       />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3 font-bold shadow-sm">
+                        {request.fullName.charAt(0).toUpperCase()}
+                      </div>
                     )}
-                    {request.fullName}
+                    <span className="font-medium text-gray-900">{request.fullName}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4">
-                  <div>
-                    <div>{request.email}</div>
-                    <div className="text-sm text-gray-500">{request.phone}</div>
+
+                <td className="py-4 px-6">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-900">{request.email}</span>
+                    <span className="text-xs text-gray-500">{request.phone}</span>
                   </div>
                 </td>
-                <td className="py-3 px-4">
+                <td className="py-4 px-6 text-gray-500 text-sm">
                   {new Date(request.createdAt).toLocaleDateString('en-GB')}
                 </td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    request.bankDetailsCompleted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {request.bankDetailsCompleted ? 'Completed' : 'Pending'}
-                  </span>
+                <td className="py-4 px-6">
+                    <Badge variant={request.bankDetailsCompleted ? 'success' : 'warning'} dot>
+                         {request.bankDetailsCompleted ? 'Completed' : 'Pending'}
+                    </Badge>
                 </td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    request.personalDocumentsCompleted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {request.personalDocumentsCompleted ? 'Completed' : 'Pending'}
-                  </span>
+                <td className="py-4 px-6">
+                    <Badge variant={request.personalDocumentsCompleted ? 'success' : 'warning'} dot>
+                         {request.personalDocumentsCompleted ? 'Completed' : 'Pending'}
+                    </Badge>
                 </td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    request.vehicleDetailsCompleted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {request.vehicleDetailsCompleted ? 'Completed' : 'Pending'}
-                  </span>
+                <td className="py-4 px-6">
+                    <Badge variant={request.vehicleDetailsCompleted ? 'success' : 'warning'} dot>
+                         {request.vehicleDetailsCompleted ? 'Completed' : 'Pending'}
+                    </Badge>
                 </td>
-                <td className="py-3 px-4">
-                  <div className="flex space-x-3">
-                    <button 
-                      className="text-green-500 hover:text-green-700"
-                      title="View details"
+                <td className="py-4 px-6">
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      title="Review Application"
                       onClick={() => handleView(request._id)}
-                      aria-label={`View details for ${request.fullName}`}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                    <button 
-                      className="text-red-500 hover:text-red-700"
-                      title="Delete partner"
-                      // onClick={() => handleDelete(request.partnerId)}
-                      aria-label={`Delete ${request.fullName}`}
+                      <Eye size={16} className="text-blue-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      title="Delete Request"
+                      onClick={() => handleDelete(request.partnerId || request._id)}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                      <Trash2 size={16} className="text-red-500" />
+                    </Button>
                   </div>
                 </td>
               </tr>
             ))}
+             {filteredRequests.length === 0 && (
+                <tr>
+                    <td colSpan={7} className="py-8 text-center text-gray-500">
+                        No pending requests found.
+                    </td>
+                </tr>
+            )}
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 };
 

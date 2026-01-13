@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, AlertCircle, CheckCircle, X, Search, RefreshCw, Truck, Eye, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, RefreshCw, Truck } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 import VehicleForm from './VehicleForm';
 import type { VehicleType } from '../../..//types/vehicle.types';
 import { vehicleService } from '../../..//services/vehicle.service';
-
-
+import Card from '../../../components/common/Card/Card';
+import Button from '../../../components/common/Button/Button';
+import Input from '../../../components/common/Input/Input';
+import Loader from '../../../components/common/Loader/Loader';
+import Badge from '../../../components/common/Badge/Badge';
 
 const VehicleList: React.FC = () => {
   const [vehicles, setVehicles] = useState<VehicleType[]>([]);
@@ -14,8 +17,6 @@ const VehicleList: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<VehicleType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<string | null>(null);
-  const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<{[key: string]: boolean}>({});
   
   useEffect(() => {
@@ -26,9 +27,6 @@ const VehicleList: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await vehicleService.getVehicles();
-      console.log('====================================');
-      console.log('Response:', response);
-      console.log('====================================');
       if (response.success) {
         setVehicles(response.vehicles);
       } else {
@@ -47,7 +45,8 @@ const VehicleList: React.FC = () => {
     setShowForm(true);
   };
   
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this vehicle?')) {
       return;
     }
@@ -76,10 +75,11 @@ const VehicleList: React.FC = () => {
     handleFormClose();
   };
 
-  const handleToggleStatus = async (vehicle: VehicleType) => {
+  const handleToggleStatus = async (vehicle: VehicleType, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!vehicle._id) return;
     
-    setStatusUpdating(prev => ({ ...prev, [vehicle._id]: true }));
+    setStatusUpdating(prev => ({ ...prev, [vehicle._id!]: true }));
     
     try {
       const response = await vehicleService.toggleVehicleStatus(vehicle._id);
@@ -99,13 +99,11 @@ const VehicleList: React.FC = () => {
       console.error('Error updating vehicle status:', error);
       toast.error('An error occurred while updating the vehicle status');
     } finally {
-      setStatusUpdating(prev => ({ ...prev, [vehicle._id]: false }));
+      setStatusUpdating(prev => ({ ...prev, [vehicle._id!]: false }));
     }
   };
 
-  const handleViewVehicle = (id: string) => {
-    
-   
+  const handleViewVehicle = (_id: string) => {
       toast('View functionality is not available', {
         icon: '👁️',
         style: {
@@ -114,39 +112,17 @@ const VehicleList: React.FC = () => {
           color: '#fff',
         },
       });
-    
   };
 
-  const handleFilterChange = (type: string | null) => {
-    setFilterType(type);
-    setShowFilterMenu(false);
-  };
-
-  const getVehicleTypeDisplay = (type: string | undefined) => {
-    if (!type) return 'Unknown';
-    
-    switch (type.toUpperCase()) {
-      case 'BIKE': return 'Bike';
-      case 'CAR': return 'Car';
-      case 'VAN': return 'Van';
-      case 'TRUCK': return 'Truck';
-      default: return type;
-    }
-  };
-  
   // Apply filters and search
   const filteredVehicles = vehicles.filter(v => {
     // Apply search filter
     const matchesSearch = !searchTerm || 
       v.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (v.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
-    
-
-    
     return matchesSearch;
   });
 
-  
   return (
     <div>
       {showForm ? (
@@ -162,45 +138,43 @@ const VehicleList: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-700 mb-2">Vehicle Management</h2>
               <p className="text-gray-600">Manage the vehicles available for delivery</p>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="mt-3 sm:mt-0 flex items-center px-4 py-2 bg-indigo-900 text-white rounded-lg hover:bg-indigo-800 transition-colors shadow-sm"
-            >
-              <Plus size={18} className="mr-1" />
-              Add New Vehicle
-            </button>
+            <div className="mt-3 sm:mt-0">
+                <Button
+                    onClick={() => setShowForm(true)}
+                    variant="primary"
+                    leftIcon={<Plus size={18} />}
+                >
+                    Add New Vehicle
+                </Button>
+            </div>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 mb-6">
+          <Card padding="none" className="overflow-hidden mb-6">
             <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
               <div className="text-lg font-medium text-gray-700">Vehicle List</div>
               <div className="flex items-center w-full sm:w-auto space-x-2">
-                <div className="relative flex-grow sm:flex-grow-0">
-                  <input
-                    type="text"
-                    placeholder="Search vehicles..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
-                  />
-                  <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+                <div className="flex-grow sm:flex-grow-0 w-full sm:w-64">
+                    <Input
+                        placeholder="Search vehicles..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        leftIcon={<Search size={18} />}
+                        fullWidth
+                    />
                 </div>
 
-                
-
-                <button
+                <Button
                   onClick={fetchVehicles}
-                  className="p-2 text-gray-700 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none"
-                  title="Refresh"
-                >
-                  <RefreshCw size={18} />
-                </button>
+                  variant="secondary"
+                  leftIcon={<RefreshCw size={18} />}
+                  className="bg-white border text-gray-700 hover:bg-gray-50"
+                />
               </div>
             </div>
             
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
+                   <Loader size="lg" />
               </div>
             ) : filteredVehicles.length === 0 ? (
               <div className="p-6 text-center">
@@ -210,19 +184,15 @@ const VehicleList: React.FC = () => {
                 <h3 className="text-gray-800 font-medium mb-1">No vehicles found</h3>
                 <p className="text-gray-500 mb-4">
                   {searchTerm ? 'No vehicles match your search criteria.' : 
-                   filterType ? `No ${getVehicleTypeDisplay(filterType)} vehicles available.` : 
                    'You have not added any vehicles yet.'}
                 </p>
-                {(searchTerm || filterType) && (
-                  <button
-                    onClick={() => {
-                      setSearchTerm('');
-                      setFilterType(null);
-                    }}
-                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                {searchTerm && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => setSearchTerm('')}
                   >
-                    Clear filters
-                  </button>
+                    Clear search
+                  </Button>
                 )}
               </div>
             ) : (
@@ -252,7 +222,7 @@ const VehicleList: React.FC = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredVehicles.map((vehicle) => (
-                      <tr key={vehicle._id} className="hover:bg-gray-50">
+                      <tr key={vehicle._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => handleViewVehicle(vehicle._id!)}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0 mr-3 bg-gray-100 rounded-full flex items-center justify-center">
@@ -269,8 +239,6 @@ const VehicleList: React.FC = () => {
                             <div>
                               <div className="text-sm font-medium text-gray-900">
                                 {vehicle.name}
-                              </div>
-                              <div className="text-xs text-gray-500">
                               </div>
                             </div>
                           </div>
@@ -290,51 +258,37 @@ const VehicleList: React.FC = () => {
                             ₹{vehicle.pricePerKm}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleToggleStatus(vehicle)}
-                            className={`relative inline-flex items-center h-6 rounded-full w-11 ${vehicle.isActive ? 'bg-green-500' : 'bg-gray-300'} ${statusUpdating[vehicle._id || ''] ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                            disabled={statusUpdating[vehicle._id || '']}
-                            title={vehicle.isActive ? 'Active - Click to deactivate' : 'Inactive - Click to activate'}
+                        <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          <div 
+                            className={`cursor-pointer ${statusUpdating[vehicle._id!] ? 'opacity-50' : ''}`}
+                            onClick={(e) => handleToggleStatus(vehicle, e)}
                           >
-                            <span 
-                              className={`inline-block w-4 h-4 transform transition-transform duration-200 ease-in-out bg-white rounded-full ${vehicle.isActive ? 'translate-x-6' : 'translate-x-1'}`} 
-                            />
-                            {statusUpdating[vehicle._id || ''] && (
-                              <span className="absolute inset-0 flex items-center justify-center">
-                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                              </span>
-                            )}
-                          </button>
-                          <span className="ml-2 text-xs text-gray-500">
-                            {vehicle.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                             <Badge 
+                                variant={vehicle.isActive ? 'success' : 'default'} 
+                                dot
+                                className="cursor-pointer"
+                             >
+                                {statusUpdating[vehicle._id!] ? 'Updating...' : (vehicle.isActive ? 'Active' : 'Inactive')}
+                             </Badge>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleViewVehicle(vehicle._id)}
-                            className="text-blue-600 hover:text-blue-900 mr-3"
-                            title="View vehicle details"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(vehicle)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-3"
-                            title="Edit vehicle"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(vehicle._id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete vehicle"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); handleEdit(vehicle); }}
+                                leftIcon={<Edit size={16} />}
+                                className="text-indigo-600 hover:text-indigo-900"
+                            />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => handleDelete(vehicle._id!, e)}
+                                leftIcon={<Trash2 size={16} />}
+                                className="text-red-600 hover:text-red-900"
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -342,7 +296,7 @@ const VehicleList: React.FC = () => {
                 </table>
               </div>
             )}
-          </div>
+          </Card>
         </>
       )}
     </div>

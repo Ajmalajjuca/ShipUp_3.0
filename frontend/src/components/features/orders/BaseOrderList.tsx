@@ -5,11 +5,11 @@ import FilterSection from './FilterSection';
 import StatusCard from './StatusCard';
 import OrderTable from './OrderTable';
 import { getStatusColor, getPaymentStatusColor, formatDate, formatTime } from './orderUtils';
-import { orderService } from '../../..//../services/order.service';
-import { userService } from '../../..//../services/user.service';
-import { driverService } from '../../..//../services/driver.service';
+import { adminService } from '../../../services/admin';
+import Loader from '../../common/Loader/Loader';
+import Card from '../../common/Card/Card';
 
-interface Order {
+export interface Order {
   id: string;
   createdAt: string;
   customerId: string;
@@ -29,6 +29,7 @@ interface Order {
   driverName?: string;
   customerPhone?: number;
   driverPhone?: number;
+  branch?: string;
 }
 
 interface StatusCounts {
@@ -79,23 +80,48 @@ const BaseOrderList: React.FC<BaseOrderListProps> = ({
   const fetchOrders = async () => {
     setIsLoading(true); 
     try {
-      const ordersData = await orderService.getAllOrder();
-      console.log('ordersData==>', ordersData);
-
+      const ordersData = await adminService.getAllOrders();
+      
       if (ordersData && Array.isArray(ordersData)) {
         // Fetch customer and driver details for each order
         const enrichedOrders = await Promise.all(
           ordersData.map(async (order: Order) => {
             try {
               if (order.customerId || order.driverId) {
-                const userResponse = await userService.getUserById(order.customerId);
-                const driverResponse = await driverService.getDriverById(order.driverId);
+                // Determine names based on available IDs. 
+                // Note: adminService might return different structure, but we assume similar behavior
+                // or we improve this by creating a dedicated method if needed.
+                let customerName = 'Unknown Customer';
+                let customerPhone = undefined;
+                let driverName = 'Unknown Driver';
+                let driverPhone = undefined;
+
+                if (order.customerId) {
+                   try {
+                     const userResponse = await adminService.getUserById(order.customerId);
+                     if (userResponse && userResponse.user) {
+                        customerName = userResponse.user.fullName;
+                        customerPhone = userResponse.user.phone;
+                     }
+                   } catch (e) { /* ignore */ }
+                }
+
+                if (order.driverId) {
+                   try {
+                        const driverResponse = await adminService.getPartnerById(order.driverId);
+                        if (driverResponse && driverResponse.partner) {
+                            driverName = driverResponse.partner.fullName;
+                            driverPhone = driverResponse.partner.mobileNumber;
+                        }
+                   } catch (e) { /* ignore */ }
+                }
+
                 return {
                   ...order,
-                  customerName: userResponse?.user.fullName || 'Unknown Customer',
-                  customerPhone: userResponse?.user.phone,
-                  driverName: driverResponse?.partner.fullName || 'Unknown Driver',
-                  driverPhone: driverResponse?.partner.mobileNumber,
+                  customerName,
+                  customerPhone,
+                  driverName,
+                  driverPhone,
                 };
               }
               return order;
@@ -186,7 +212,7 @@ const BaseOrderList: React.FC<BaseOrderListProps> = ({
       order.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.status.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesBranch = branch === 'All Branch' || order.branch === branch; // Adjust if branch is part of order data
+    const matchesBranch = branch === 'All Branch' || order.branch === branch;
 
     const orderDate = new Date(order.createdAt);
     const matchesDate =
@@ -197,7 +223,7 @@ const BaseOrderList: React.FC<BaseOrderListProps> = ({
   });
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <Card className="border-gray-100" padding="lg">
       <div className="flex items-center gap-2 mb-6">
         <Calendar className="w-5 h-5 text-green-500" />
         <h1 className="text-lg font-semibold">{title}</h1>
@@ -309,16 +335,20 @@ const BaseOrderList: React.FC<BaseOrderListProps> = ({
         </div>
       )}
 
-      <OrderTable
-        orders={filteredOrders}
-        isLoading={isLoading}
-        onViewOrder={onViewOrder}
-        getStatusColor={getStatusColor}
-        getPaymentStatusColor={getPaymentStatusColor}
-        formatDate={formatDate}
-        formatTime={formatTime}
-      />
-    </div>
+      {isLoading ? (
+           <Loader size="lg" />
+      ) : (
+        <OrderTable
+            orders={filteredOrders}
+            isLoading={false}
+            onViewOrder={onViewOrder}
+            getStatusColor={getStatusColor}
+            getPaymentStatusColor={getPaymentStatusColor}
+            formatDate={formatDate}
+            formatTime={formatTime}
+        />
+      )}
+    </Card>
   );
 };
 

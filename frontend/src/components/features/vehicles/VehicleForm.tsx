@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
-import { X, Save, Upload, AlertCircle, Truck } from "lucide-react";
+import { X, Save, Upload, Truck } from "lucide-react";
 import type {
   CreateVehicleInput,
   VehicleType,
 } from "../../..//types/vehicle.types";
 import { vehicleService } from "../../..//services/vehicle.service";
+import Button from "../../../components/common/Button/Button";
+import Input from "../../../components/common/Input/Input";
 
 interface VehicleFormProps {
   vehicle?: VehicleType | null;
@@ -23,11 +25,11 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     description: "",
     maxWeight: 0,
     pricePerKm: 0,
-    imageUrl: "", // ← we won't use this for sending anymore
+    imageUrl: "", // we won't use this for sending anymore
   });
 
-  const [file, setFile] = useState<File | null>(null);           // ← new!
-  const [preview, setPreview] = useState<string | null>(null);   // nice to have
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +41,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         description: vehicle.description,
         maxWeight: Number(vehicle.maxWeight ?? 0),
         pricePerKm: vehicle.pricePerKm ?? 0,
-        imageUrl: "", // we don't send this anymore
+        imageUrl: "",
       });
       setPreview(vehicle.imageUrl || null);
       setIsActive(vehicle.isActive ?? true);
@@ -62,19 +64,14 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Optional: size/type validation
     if (selectedFile.size > 10 * 1024 * 1024) {
       toast.error("File size should be less than 10MB");
       return;
     }
 
     setFile(selectedFile);
-
-    // Show preview
     const objectUrl = URL.createObjectURL(selectedFile);
     setPreview(objectUrl);
-
-    // Cleanup
     return () => URL.revokeObjectURL(objectUrl);
   };
 
@@ -86,9 +83,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
 
     if (formData.maxWeight <= 0) newErrors.maxWeight = "Max weight must be > 0";
     if (formData.pricePerKm <= 0) newErrors.pricePerKm = "Price per km must be > 0";
-
-    // Optional: you can make image required for new vehicles
-    // if (!vehicle && !file) newErrors.image = "Image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -103,7 +97,6 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
     try {
       const payload = new FormData();
 
-      // Text fields
       payload.append("name", formData.name);
       payload.append("description", formData.description || "");
       payload.append("maxWeight", String(formData.maxWeight));
@@ -113,25 +106,22 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         payload.append("isActive", String(isActive));
       }
 
-      // File (only if user selected new one)
       if (file) {
-        payload.append("image", file); // ← backend should expect field name "image"
+        payload.append("image", file);
       }
 
       let response;
 
       if (vehicle) {
-        // UPDATE - you might need to send vehicle id in url or as _id field
-        response = await vehicleService.updateVehicle(vehicle._id, payload);
+        response = await vehicleService.updateVehicle(vehicle._id!, payload);
       } else {
-        // CREATE
         response = await vehicleService.createVehicle(payload);
       }
 
       if (response.success) {
         toast.success(vehicle ? "Vehicle updated!" : "Vehicle created!");
         onSubmit();
-        onClose(); // optional
+        onClose();
       } else {
         toast.error(response.message || "Operation failed");
       }
@@ -160,32 +150,15 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
 
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Vehicle Name *
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.name
-                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              } sm:text-sm`}
-            />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle size={14} className="mr-1" />
-                {errors.name}
-              </p>
-            )}
-          </div>
+          <Input
+            label="Vehicle Name *"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            error={errors.name}
+            fullWidth
+          />
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
@@ -222,7 +195,7 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
           <div className="space-y-2 md:col-span-2">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
               Description *
             </label>
@@ -232,77 +205,44 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
               rows={3}
               value={formData.description}
               onChange={handleChange}
-              className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
+              className={`block w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 transition-all duration-200 ${
                 errors.description
-                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                  ? "border-red-500 focus:ring-red-500 focus:border-red-500"
                   : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              } sm:text-sm`}
+              }`}
             />
             {errors.description && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle size={14} className="mr-1" />
                 {errors.description}
               </p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="maxWeight"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Max Weight (kg) *
-            </label>
-            <input
-              type="number"
-              id="maxWeight"
-              name="maxWeight"
-              value={formData.maxWeight}
-              onChange={handleChange}
-              min="0"
-              step="0.1"
-              className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.maxWeight
-                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              } sm:text-sm`}
-            />
-            {errors.maxWeight && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle size={14} className="mr-1" />
-                {errors.maxWeight}
-              </p>
-            )}
-          </div>
+          <Input
+            label="Max Weight (kg) *"
+            type="number"
+            id="maxWeight"
+            name="maxWeight"
+            value={formData.maxWeight}
+            onChange={handleChange}
+            min="0"
+            step="0.1"
+            error={errors.maxWeight}
+            fullWidth
+          />
 
-          <div className="space-y-2">
-            <label
-              htmlFor="pricePerKm"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Price per KM (₹) *
-            </label>
-            <input
-              type="number"
-              id="pricePerKm"
-              name="pricePerKm"
-              value={formData.pricePerKm}
-              onChange={handleChange}
-              min="0"
-              step="0.5"
-              className={`mt-1 block w-full rounded-md shadow-sm py-2 px-3 border ${
-                errors.pricePerKm
-                  ? "border-red-300 focus:ring-red-500 focus:border-red-500"
-                  : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-              } sm:text-sm`}
-            />
-            {errors.pricePerKm && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle size={14} className="mr-1" />
-                {errors.pricePerKm}
-              </p>
-            )}
-          </div>
+          <Input
+             label="Price per KM (₹) *"
+             type="number"
+             id="pricePerKm"
+             name="pricePerKm"
+             value={formData.pricePerKm}
+             onChange={handleChange}
+             min="0"
+             step="0.5"
+             error={errors.pricePerKm}
+             fullWidth
+          />
 
           {vehicle && (
             <div className="space-y-2">
@@ -336,49 +276,17 @@ const VehicleForm: React.FC<VehicleFormProps> = ({
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-900 hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Save size={18} className="mr-2" />
+            <Button variant="secondary" onClick={onClose} type="button">
+                Cancel
+            </Button>
+            <Button
+                variant="primary"
+                type="submit"
+                isLoading={isSubmitting}
+                leftIcon={<Save size={18} />}
+            >
                 {vehicle ? "Update Vehicle" : "Save Vehicle"}
-              </>
-            )}
-          </button>
+            </Button>
         </div>
       </form>
     </div>

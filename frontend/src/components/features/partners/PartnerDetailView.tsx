@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, Search, Package, Truck, CheckCircle, CreditCard, Filter } from 'lucide-react';
-import { driverService } from '../../..//../services/driver.service';
+import { ArrowLeft, Calendar, Search, Package, Truck, CheckCircle, CreditCard, Filter, AlertCircle } from 'lucide-react';
+import { adminService } from '../../../services/admin';
 import { toast } from 'react-hot-toast';
+import Card from '../../../components/common/Card/Card';
+import Button from '../../../components/common/Button/Button';
+import Input from '../../../components/common/Input/Input';
+import Badge from '../../../components/common/Badge/Badge';
+import Loader from '../../../components/common/Loader/Loader';
 
 const STATUS_COLORS = {
-  Pending: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-  'Out For Delivery': { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
-  Delivered: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
-  Cancelled: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  Pending: { bg: 'bg-amber-50', text: 'text-amber-700', variant: 'warning' },
+  'Out For Delivery': { bg: 'bg-blue-50', text: 'text-blue-700', variant: 'info' },
+  Delivered: { bg: 'bg-green-50', text: 'text-green-700', variant: 'success' },
+  Cancelled: { bg: 'bg-red-50', text: 'text-red-700', variant: 'danger' },
 };
 
 // Define interfaces
@@ -44,9 +49,7 @@ interface StatsCardProps {
   title: string;
   value: number | string;
   icon: React.ReactNode;
-  bgColor: string;
-  iconBgColor: string;
-  iconColor: string;
+  variant: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
 }
 
 interface PartnerDetailViewProps {
@@ -55,56 +58,63 @@ interface PartnerDetailViewProps {
 }
 
 // Stats Card Component
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, bgColor, iconBgColor, iconColor }) => (
-  <div className={`${bgColor} rounded-lg p-5 shadow-sm transition-all hover:shadow-md`}>
-    <div className="flex justify-between items-center">
-      <div>
-        <h3 className="text-3xl font-bold">{value}</h3>
-        <p className="text-gray-700 font-medium mt-1">{title}</p>
+const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, variant }) => {
+    let bgClass = 'bg-white';
+    let iconBgClass = 'bg-gray-100';
+    let iconColorClass = 'text-gray-600';
+
+    switch (variant) {
+        case 'warning':
+            bgClass = 'bg-amber-50';
+            iconBgClass = 'bg-amber-100';
+            iconColorClass = 'text-amber-600';
+            break;
+        case 'info':
+            bgClass = 'bg-blue-50';
+            iconBgClass = 'bg-blue-100';
+            iconColorClass = 'text-blue-600';
+            break;
+        case 'success':
+            bgClass = 'bg-green-50';
+            iconBgClass = 'bg-green-100';
+            iconColorClass = 'text-green-600';
+            break;
+        case 'primary':
+            bgClass = 'bg-indigo-50';
+            iconBgClass = 'bg-indigo-100';
+            iconColorClass = 'text-indigo-600';
+            break;
+    }
+
+  return (
+    <Card className={`${bgClass} border-none shadow-sm transition-all hover:shadow-md h-full`} padding="md">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
+          <p className="text-gray-600 font-medium mt-1">{title}</p>
+        </div>
+        <div className={`rounded-full ${iconBgClass} p-3`}>
+          <div className={`${iconColorClass}`}>{icon}</div>
+        </div>
       </div>
-      <div className={`rounded-full ${iconBgColor} p-3`}>
-        <div className={`${iconColor}`}>{icon}</div>
-      </div>
-    </div>
-  </div>
-);
+    </Card>
+  );
+};
 
 // Order Item Component
 const OrderItem: React.FC<{ order: Order }> = ({ order }) => {
-  const statusStyle = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || 
-    { bg: 'bg-gray-50', text: 'text-gray-700', dot: 'bg-gray-500' };
+  const statusConfig = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || 
+    { bg: 'bg-gray-50', text: 'text-gray-700', variant: 'neutral' };
     
-  // Status icon based on order status
-  const getStatusIcon = () => {
-    switch(order.status) {
-      case 'Pending':
-        return <Package size={16} />;
-      case 'Out For Delivery':
-        return <Truck size={16} />;
-      case 'Delivered':
-        return <CheckCircle size={16} />;
-      case 'Cancelled':
-        return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <line x1="15" y1="9" x2="9" y2="15" />
-          <line x1="9" y1="9" x2="15" y2="15" />
-        </svg>;
-      default:
-        return <Package size={16} />;
-    }
-  };
-
   return (
-    <div className="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all overflow-hidden group">
-      {/* Left status indicator bar */}
-      <div className={`absolute left-0 top-0 w-1 h-full ${statusStyle.bg.replace('bg-', 'bg-')}` + 
-        (statusStyle.bg.includes('amber') ? ' bg-amber-500' : 
-        statusStyle.bg.includes('blue') ? ' bg-blue-500' : 
-        statusStyle.bg.includes('green') ? ' bg-green-500' : 
-        statusStyle.bg.includes('red') ? ' bg-red-500' : ' bg-gray-500')
-      }></div>
-      
-      {/* Card content with padding compensating for the status bar */}
+    <Card className="hover:shadow-lg transition-all overflow-hidden group border-l-4" padding="none">
+        <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+             order.status === 'Pending' ? 'bg-amber-500' :
+             order.status === 'Out For Delivery' ? 'bg-blue-500' :
+             order.status === 'Delivered' ? 'bg-green-500' :
+             order.status === 'Cancelled' ? 'bg-red-500' : 'bg-gray-500'
+        }`}></div>
+
       <div className="p-5 pl-6">
         {/* Top section with order ID, status, date, amount */}
         <div className="flex flex-col sm:flex-row justify-between mb-5 pb-4 border-b border-gray-100">
@@ -126,10 +136,9 @@ const OrderItem: React.FC<{ order: Order }> = ({ order }) => {
           </div>
           
           <div className="flex items-center justify-between sm:justify-end gap-6 mt-3 sm:mt-0">
-            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${statusStyle.bg} ${statusStyle.text} text-xs font-semibold`}>
-              {getStatusIcon()}
-              <span>{order.status}</span>
-            </div>
+             <Badge variant={statusConfig.variant as any} dot>
+                {order.status}
+             </Badge>
             
             <div className="text-right">
               <p className="text-gray-900 font-bold text-lg">₹{order.totalAmount.toFixed(2)}</p>
@@ -198,22 +207,18 @@ const OrderItem: React.FC<{ order: Order }> = ({ order }) => {
         </div>
         
         {/* Action buttons */}
-        <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md mr-2 transition-colors">
-            Track Order
-          </button>
-          <button className="px-3 py-1 text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors">
-            View Details
-          </button>
+        <div className="mt-5 pt-3 border-t border-gray-100 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+           <Button variant="secondary" size="sm">Track Order</Button>
+           <Button variant="ghost" size="sm">View Details</Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 
 // Profile Card Component
 const ProfileCard: React.FC<{ partner: Partner }> = ({ partner }) => (
-  <div className="bg-white border border-gray-100 rounded-lg p-6 shadow-sm transition-all hover:shadow-md">
+  <Card className="border border-gray-100 shadow-sm transition-all hover:shadow-md" padding="lg">
     <div className="flex flex-col md:flex-row gap-6">
       <div className="flex items-center gap-5">
         {partner.profileImage ? (
@@ -238,9 +243,9 @@ const ProfileCard: React.FC<{ partner: Partner }> = ({ partner }) => (
               year: 'numeric' 
             })}
           </p>
-          <button className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 px-4 rounded-md transition-colors shadow-sm">
-            Edit Profile
-          </button>
+          <div className="mt-3">
+             <Button variant="primary" size="sm">Edit Profile</Button>
+          </div>
         </div>
       </div>
 
@@ -269,7 +274,7 @@ const ProfileCard: React.FC<{ partner: Partner }> = ({ partner }) => (
         </div>
       </div>
     </div>
-  </div>
+  </Card>
 );
 
 // Main Component
@@ -294,27 +299,28 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
 
   const fetchPartnerDetails = async () => {
     try {
-      const partnerRes = await driverService.getDriverById(partnerId);
-      setPartner(partnerRes.partner);
+      const partnerRes = await adminService.getPartnerById(partnerId);
+      // Ensure we handle the response structure correctly.
+      setPartner(partnerRes.partner || partnerRes); 
     } catch (error) {
       console.error('Error fetching partner details:', error);
       toast.error('Failed to fetch partner details');
     } finally {
-      setLoading(false);
+      if (stats.orderAmount !== undefined) setLoading(false); 
     }
   };
 
   const fetchPartnerOrders = async () => {
     try {
-      const response = await driverService.getPartnerOrders(partnerId);
+      const response = await adminService.getPartnerOrders(partnerId);
       const partnerOrders = response || [];
       setOrders(partnerOrders);
 
       // Calculate stats
-      const pending = partnerOrders.filter(order => order.status === 'Pending').length;
-      const outForDelivery = partnerOrders.filter(order => order.status === 'Out For Delivery').length;
-      const completed = partnerOrders.filter(order => order.status === 'Delivered').length;
-      const totalAmount = partnerOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+      const pending = partnerOrders.filter((order: Order) => order.status === 'Pending').length;
+      const outForDelivery = partnerOrders.filter((order: Order) => order.status === 'Out For Delivery').length;
+      const completed = partnerOrders.filter((order: Order) => order.status === 'Delivered').length;
+      const totalAmount = partnerOrders.reduce((sum: number, order: Order) => sum + (order.totalAmount || 0), 0);
 
       setStats({
         pending,
@@ -325,6 +331,8 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
     } catch (error) {
       console.error('Error fetching partner orders:', error);
       toast.error('Failed to fetch partner orders');
+    } finally {
+        if (partner) setLoading(false);
     }
   };
 
@@ -334,33 +342,17 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
     setFiltersVisible(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-700 font-medium">Loading partner details...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><Loader size="lg" text="Loading partner details..." /></div>;
 
   if (!partner) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md text-center">
-          <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+        <Card className="text-center p-8 max-w-lg">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-800 mb-2">Partner Not Found</h2>
           <p className="text-gray-600 mb-4">We couldn't find the partner details you're looking for.</p>
-          <button 
-            onClick={onBack}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
+          <Button onClick={onBack} variant="primary">Go Back</Button>
+        </Card>
       </div>
     );
   }
@@ -375,13 +367,13 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
       <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center">
-            <button
+            <Button
+              variant="ghost"
               onClick={onBack}
-              className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Go back"
+              className="mr-4 rounded-full"
+              leftIcon={<ArrowLeft size={20} />}
             >
-              <ArrowLeft size={20} />
-            </button>
+            </Button>
             <h1 className="text-xl font-bold text-gray-800">
               Deliveryman Details
             </h1>
@@ -401,69 +393,57 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
             title="Pending" 
             value={stats.pending} 
             icon={<Package size={22} />} 
-            bgColor="bg-amber-50" 
-            iconBgColor="bg-amber-100" 
-            iconColor="text-amber-600" 
+            variant="warning"
           />
           <StatsCard 
             title="Out for Delivery" 
             value={stats.outForDelivery} 
             icon={<Truck size={22} />} 
-            bgColor="bg-blue-50" 
-            iconBgColor="bg-blue-100" 
-            iconColor="text-blue-600" 
+            variant="info"
           />
           <StatsCard 
             title="Completed" 
             value={stats.completed} 
             icon={<CheckCircle size={22} />} 
-            bgColor="bg-green-50" 
-            iconBgColor="bg-green-100" 
-            iconColor="text-green-600" 
+            variant="success"
           />
           <StatsCard 
             title="Order Amount" 
             value={`₹${stats.orderAmount.toFixed(2)}`} 
             icon={<CreditCard size={22} />} 
-            bgColor="bg-indigo-50" 
-            iconBgColor="bg-indigo-100" 
-            iconColor="text-indigo-600" 
+            variant="primary"
           />
         </div>
 
         {/* Order List Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <Card className="p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4 sm:mb-0">
               Orders <span className="text-sm font-normal text-gray-500 ml-1">({filteredOrders.length})</span>
             </h2>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-grow sm:flex-grow-0">
-                <input
-                  type="text"
+              <div className="relative flex-grow sm:flex-grow-0 w-full sm:w-64">
+                <Input
                   placeholder="Search by order ID"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-64"
+                  leftIcon={<Search size={18} />}
+                  fullWidth
                 />
-                <Search size={18} className="absolute top-2.5 left-3 text-gray-400" />
               </div>
 
-              <button 
+              <Button 
+                variant="secondary"
                 onClick={() => setFiltersVisible(!filtersVisible)} 
-                className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg flex items-center gap-2"
+                leftIcon={<Filter size={18} />}
               >
-                <Filter size={18} />
                 <span className="hidden sm:inline">Filters</span>
-              </button>
+              </Button>
 
-              <button className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+              <Button variant="primary" leftIcon={<Package size={20} />}>
                 <span className="hidden sm:inline">Export</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -513,19 +493,19 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
                 </div>
               </div>
               
-              <div className="flex justify-end mt-4">
-                <button 
+              <div className="flex justify-end mt-4 gap-2">
+                <Button 
+                  variant="secondary"
                   onClick={() => setFiltersVisible(false)} 
-                  className="bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg mr-2"
                 >
                   Cancel
-                </button>
-                <button 
+                </Button>
+                <Button 
+                  variant="primary"
                   onClick={handleFilter}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg"
                 >
                   Apply Filters
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -539,9 +519,7 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
             </div>
           ) : (
             <div className="text-center py-12">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900">No orders found</h3>
               <p className="mt-1 text-gray-500">Try adjusting your search or filter criteria</p>
             </div>
@@ -550,25 +528,15 @@ const PartnerDetailView: React.FC<PartnerDetailViewProps> = ({ partnerId, onBack
           {filteredOrders.length > 0 && (
             <div className="mt-6 flex justify-center">
               <nav className="flex items-center gap-1">
-                <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50">
-                  Previous
-                </button>
-                <button className="px-3 py-1 border border-indigo-500 rounded-md bg-indigo-50 text-indigo-700 font-medium">
-                  1
-                </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
-                  2
-                </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50">
-                  3
-                </button>
-                <button className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-500 hover:bg-gray-50">
-                  Next
-                </button>
+                <Button variant="ghost" disabled>Previous</Button>
+                <Button variant="primary" size="sm">1</Button>
+                <Button variant="ghost" size="sm">2</Button>
+                <Button variant="ghost" size="sm">3</Button>
+                <Button variant="ghost">Next</Button>
               </nav>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );
