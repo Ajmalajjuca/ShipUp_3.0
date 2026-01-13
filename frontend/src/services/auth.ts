@@ -14,7 +14,7 @@ class AuthService {
       refreshToken: string;
     }>>('/admin/login', { email, password });
     console.log('Admin login response:', response);
-    
+
     const { user, accessToken, refreshToken } = response.data;
     this.setRefreshToken(refreshToken);
     this.setTokens(accessToken);
@@ -36,13 +36,13 @@ class AuthService {
   }
 
   async refreshAccessToken(): Promise<string | null> {
-    
+
     try {
       const response = await api.post<ApiResponse<{
         accessToken: string;
       }>>('/auth/refresh-token');
       console.log('Token refresh response:', response);
-      const { accessToken} = response.data;
+      const { accessToken } = response.data;
       this.setTokens(accessToken);
       return accessToken;
     } catch (error) {
@@ -60,7 +60,7 @@ class AuthService {
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
 
-  
+
 
   getAccessToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);

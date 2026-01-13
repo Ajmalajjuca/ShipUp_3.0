@@ -30,6 +30,8 @@ export interface User {
   lastLogin?: Date;
   loyaltyPoints?: number;
   walletBalance?: number;
+  totalOrders?: number;
+  totalAmount?: number;
   order: Order[];
 }
 export interface AuthState {
@@ -112,13 +114,13 @@ export interface DriverRegistrationData {
   insuranceDocument?: File;
   pollutionDocument?: File;
 }
-  
-  export interface DocumentItem {
-    id: string;
-    title: string;
-    isCompleted: boolean;
-    formComponent: React.FC<unknown>;
-  }
+
+export interface DocumentItem {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  formComponent: React.FC<unknown>;
+}
 
 export interface PartnerUser {
   _id: string;
@@ -238,7 +240,7 @@ export interface vehicle {
   isAvailable: boolean;
 }
 
-export type OrderStatus= 
+export type OrderStatus =
   | "created"
   | "finding_driver"
   | "driver_assigned"

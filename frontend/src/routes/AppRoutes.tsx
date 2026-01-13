@@ -1,10 +1,11 @@
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
+import AdminRoutes from "./AdminRoutes";
 
 // Lazy imports
 const Homepage = lazy(() => import("../pages/admin/Homepage"));
 const AdminLoginPage = lazy(() => import("../pages/admin/AdminLoginPage"));
-const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+
 // Fallback UI while components load
 const Loader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -16,14 +17,17 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
-        {/* Fallback Route */}
-        <Route path="*" element={<>Not Found</>} />
-
         {/* Public Routes */}
         <Route path="/" element={<Homepage />} />
         
-        <Route path="/admin" element={<AdminLoginPage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard/>} />
+        {/* Admin Login */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        
+        {/* Admin Dashboard with nested routes */}
+        <Route path="/admin/*" element={<AdminRoutes />} />
+
+        {/* Fallback Route */}
+        <Route path="*" element={<>Not Found</>} />
       </Routes>
     </Suspense>
   );
