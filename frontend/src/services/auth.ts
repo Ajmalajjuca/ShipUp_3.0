@@ -1,25 +1,11 @@
 import { jwtDecode } from 'jwt-decode';
-import type { User, LoginCredentials, ApiResponse, RegisterCredentials } from '../types';
+import type { User, ApiResponse } from '../types';
 import api from './api';
 
 class AuthService {
   private readonly TOKEN_KEY = 'authToken';
   private readonly REFRESH_TOKEN_KEY = 'refreshToken';
 
-  async login(credentials: LoginCredentials): Promise<User> {
-    const response = await api.post<ApiResponse<{
-      user: User;
-      accessToken: string;
-      refreshToken: string;
-    }>>('/auth/login', credentials);
-    console.log('response in auth', response);
-    
-
-    const { user, accessToken, refreshToken } = response.data;
-    this.setRefreshToken(refreshToken);
-    this.setTokens(accessToken);
-    return user;
-  }
 
   async adminLoginService(email: string, password: string): Promise<User> {
     const response = await api.post<ApiResponse<{
@@ -35,20 +21,6 @@ class AuthService {
     return user;
   }
 
-  async register(userData: RegisterCredentials): Promise<User> {
-    const response = await api.post<ApiResponse<{
-      user: User;
-      accessToken: string;
-      refreshToken: string;
-    }>>('/auth/register', userData);
-    console.log('rwsiatration ',response);
-    
-
-    const { user, accessToken, refreshToken } = response.data;
-    this.setRefreshToken(refreshToken);
-    this.setTokens(accessToken);
-    return user;
-  }
 
   async logout(): Promise<void> {
     const refreshToken = this.getRefreshToken();
@@ -61,37 +33,6 @@ class AuthService {
       }
     }
     this.clearTokens();
-  }
-
-  async verifyOtp(data: { code: string; type: string; newPassword?: string }): Promise<{ massege: string; }> {
-    const response = await api.post<ApiResponse<{
-      massege: string;
-    }>>('/auth/verify-otp', data);
-    console.log('OTP verification response:', response);
-    return response.data;
-  }
-
-  async resendOtp(type: string): Promise<{ massage: string; }> {
-    const response = await api.post<ApiResponse<{ massage: string; }>>('/auth/resend-otp', { type });
-    console.log('Resend OTP response:', response);
-    return response.data;
-  }
-
-  async getCurrentUser(): Promise<User | null> {
-    const token = this.getAccessToken();
-    if (!token || this.isTokenExpired(token)) {
-      return null;
-    }
-
-    try {
-      const response = await api.get<ApiResponse<User>>('/auth/me');
-      return response.data;
-    } catch (error) {
-      console.log('Failed to fetch current user:', error);
-      
-      this.clearTokens();
-      return null;
-    }
   }
 
   async refreshAccessToken(): Promise<string | null> {

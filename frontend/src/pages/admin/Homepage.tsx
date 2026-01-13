@@ -6,31 +6,24 @@ import Services from "../../components/user/landing/LandingComponents/Services";
 import HomeLayout from "../../components/user/layout/HomeLayout";
 
 const Homepage = () => {
-
-
   return (
     <HomeLayout>
+      <div className="flex flex-col min-h-screen bg-gray-50">
+        {/* Hero Section */}
+        <Hero />
 
-    <div className="flex flex-col min-h-screen bg-gray-50">
+        {/* Calculator Section */}
+        <Calculator />
 
+        {/* Services Section */}
+        <Services />
 
-      {/* Hero Section */}
-      <Hero />
+        {/* Operation Mode Section */}
+        <Operation />
 
-      {/* Calculator Section */}
-      <Calculator />
-
-      {/* Services Section */}
-      <Services />
-
-      {/* Operation Mode Section */}
-      <Operation />
-
-      {/* Global Map Section */}
-      <Global_map />
-
-
-    </div>
+        {/* Global Map Section */}
+        <Global_map />
+      </div>
     </HomeLayout>
   );
 };
