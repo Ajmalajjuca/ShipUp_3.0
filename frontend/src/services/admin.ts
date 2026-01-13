@@ -1,20 +1,20 @@
 import api from "./api";
 
 class AdminService {
-  // Add admin-specific methods here
+    // Add admin-specific methods here
 
-  
-    async getAllUsers(pagination?: { page: number; limit: number }, filter?: { role?: string; status?: string }): Promise<any> {
-  // Build query string
-  const params = {
-    page: pagination?.page || 1,
-    limit: pagination?.limit || 10,
-    ...filter
-  };
 
-  const response = await api.get('/admin/users', { params });
-  return response.data;
-}
+    async getAllUsers(pagination?: { page: number; limit: number }, filter?: { role?: string; status?: string; search?: string }): Promise<any> {
+        // Build query string
+        const params = {
+            page: pagination?.page || 1,
+            limit: pagination?.limit || 10,
+            ...filter
+        };
+
+        const response = await api.get('/admin/users', { params });
+        return response.data;
+    }
 
     async getUserById(userId: string): Promise<any> {
         const response = await api.get(`/admin/users/${userId}`);
@@ -22,7 +22,7 @@ class AdminService {
     }
 
     async updateUser(userId: string, userData: any): Promise<any> {
-        const response = await api.put(`/admin/users/${userId}`, userData);        
+        const response = await api.put(`/admin/users/${userId}`, userData);
         return response.data;
     }
 
@@ -36,7 +36,7 @@ class AdminService {
         return response.data;
     }
 
-    async getAllPartnersRequest():Promise<any>{
+    async getAllPartnersRequest(): Promise<any> {
         const response = await api.get('/admin/partners/requests');
         return response.data;
     }
@@ -100,6 +100,15 @@ class AdminService {
         return response.data;
     }
 
+    async verifyDocument(partnerId: string, field: string): Promise<any> {
+        const response = await api.put(`/admin/partners/${partnerId}/verify/${field}`);
+        return response.data;
+    }
+
+    async getPartnerOrders(partnerId: string): Promise<any> {
+        const response = await api.get(`/admin/partners/${partnerId}/orders`);
+        return response.data;
+    }
 }
 
 export const adminService = new AdminService();

@@ -1,13 +1,12 @@
-import axios, {  AxiosError } from 'axios';
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { authService } from './auth';
-import { deliveryPartnerAuthService } from './deliveryPartnerAuth';
+import axios, { AxiosError } from "axios";
+import type { AxiosRequestConfig, AxiosResponse } from "axios";
+import { authService } from "./auth";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1",
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true,
 });
@@ -16,12 +15,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     let token;
-    if(config.url?.startsWith('/partner')){
-       token = deliveryPartnerAuthService.getAccessToken();
-    } else {
-      token = authService.getAccessToken(); 
-    }
-    
+
+    token = authService.getAccessToken();
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,7 +30,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -50,7 +48,7 @@ api.interceptors.response.use(
         }
       } catch {
         // Redirect to login or handle refresh failure
-        window.location.href = '/login';
+        window.location.href = "/login";
       }
     }
 
